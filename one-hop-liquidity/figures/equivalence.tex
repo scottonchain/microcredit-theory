@@ -1,0 +1,21 @@
+% Figure: one-hop success against q, with multi-hop steady-state success at q = 0.2
+% (data/equivalence_curve.csv; horizontal lines from Table 3).
+\begin{tikzpicture}
+  \begin{axis}[
+      width=0.72\linewidth, height=5.2cm,
+      xmin=0.05, xmax=0.8, ymin=0, ymax=1.05,
+      xlabel={share of accounts holding a line, $q$}, ylabel={one-hop success},
+      tick label style={font=\footnotesize}, label style={font=\small},
+      legend style={font=\scriptsize, draw=none, at={(0.97,0.03)}, anchor=south east},
+    ]
+    \addplot[thick, blue!65!black, mark=*, mark size=1pt] table[x=q, y=onehop_static, col sep=comma] {data/equivalence_curve.csv};
+    \addlegendentry{one hop, fresh}
+    \addplot[thick, dashed, blue!65!black, mark=o, mark size=1pt] table[x=q, y=onehop_steady, col sep=comma] {data/equivalence_curve.csv};
+    \addlegendentry{one hop, steady}
+    \addplot[thin, green!45!black, domain=0.05:0.8] {0.828};
+    \addlegendentry{2 hops at $q=0.2$, steady}
+    \addplot[thin, orange!80!black, domain=0.05:0.8] {0.958};
+    \addlegendentry{3 hops at $q=0.2$, steady}
+    \addplot[dotted, gray] coordinates {(0.2,0) (0.2,1.05)};
+  \end{axis}
+\end{tikzpicture}

@@ -1,0 +1,27 @@
+% Figure: steady-state success against mean degree (data/degree_ws.csv, data/degree_sbm_half.csv).
+\begin{tikzpicture}
+  \begin{groupplot}[
+      group style={group size=2 by 1, horizontal sep=1.4cm},
+      width=0.47\linewidth, height=5cm,
+      xmin=4, xmax=12, xtick={4,6,8,10,12}, ymin=0, ymax=1.05,
+      xlabel={mean degree},
+      tick label style={font=\footnotesize}, label style={font=\small}, title style={font=\small},
+      legend style={font=\scriptsize, draw=none, fill=white, fill opacity=0.85, text opacity=1, at={(0.97,0.03)}, anchor=south east},
+    ]
+    \nextgroupplot[title={Watts--Strogatz}, ylabel={share of requests granted}]
+    \addplot[thick, mark=*, mark size=1.2pt, blue!65!black] table[x=degree, y=s_one-hop, col sep=comma] {data/degree_ws.csv};
+    \addlegendentry{one hop}
+    \addplot[thick, mark=square*, mark size=1.2pt, green!45!black] table[x=degree, y=s_2-hop, col sep=comma] {data/degree_ws.csv};
+    \addlegendentry{2 hops}
+    \addplot[thick, mark=triangle*, mark size=1.4pt, orange!80!black] table[x=degree, y=s_3-hop, col sep=comma] {data/degree_ws.csv};
+    \addlegendentry{3 hops}
+    \addplot[thick, mark=diamond*, mark size=1.4pt, red!70!black] table[x=degree, y=s_unbounded, col sep=comma] {data/degree_ws.csv};
+    \addlegendentry{unbounded}
+
+    \nextgroupplot[title={SBM, credit in half the blocks}]
+    \addplot[thick, mark=*, mark size=1.2pt, blue!65!black] table[x=degree, y=s_one-hop, col sep=comma] {data/degree_sbm_half.csv};
+    \addplot[thick, mark=square*, mark size=1.2pt, green!45!black] table[x=degree, y=s_2-hop, col sep=comma] {data/degree_sbm_half.csv};
+    \addplot[thick, mark=triangle*, mark size=1.4pt, orange!80!black] table[x=degree, y=s_3-hop, col sep=comma] {data/degree_sbm_half.csv};
+    \addplot[thick, mark=diamond*, mark size=1.4pt, red!70!black] table[x=degree, y=s_unbounded, col sep=comma] {data/degree_sbm_half.csv};
+  \end{groupplot}
+\end{tikzpicture}

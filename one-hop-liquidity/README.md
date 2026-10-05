@@ -1,0 +1,35 @@
+# One Hop or Many
+
+**One Hop or Many: What Solvent Intermediaries Cost a Credit Network.** Working paper, prepared for
+Network Science.
+
+- [paper.pdf](paper.pdf): the compiled paper.
+- [JOURNALS.md](JOURNALS.md): the paper's discipline, three target journals, and what is out of scope.
+- `paper.tex`, `references.bib`, `figures/`: the sources. The figures are TikZ and pgfplots.
+- `data/`: every table and curve, extracted from the contract repository's liquidity experiments.
+- `scripts/extract_liquidity.py`: the extraction.
+
+## Results
+
+| In the paper | Statement |
+| --- | --- |
+| Proposition 1 | If every intermediary must be able to pay, from its own credit, for what it passes on, the maximum flow into a borrower equals the one-hop value |
+| Proposition 2 | Sybil extraction equals each regime's cut, does not depend on the number of Sybil accounts, and is at most the attack edges times the trust per edge |
+| Tables 1 and 2 | One hop serves 28 to 43% of borrowers without credit in the steady state where multi-hop routing serves 83 to 100% (credit spread) |
+| Table 3 | One hop needs 2.1, 3.1 and 3.8 times the issued credit to match two hops, three hops and unbounded routing |
+| Table 4 | 40 to 62% of two-hop volume enters the borrower through accounts without credit |
+| Table 5 | The same attack edges extract 3.3 to 7 times as much under multi-hop routing |
+
+## Build and reproduce
+
+```bash
+make                                                                  # latexmk -pdf paper.tex
+python3 analysis/liquidity/run.py                                     # in the contract repository, about 4 minutes
+python3 scripts/extract_liquidity.py <path to microcredit-contract>   # commit b725a85
+```
+
+## Contributing
+
+Run the regimes on an empirical social graph, prove a bound on one-hop liquidity in terms of degree
+and holder share, or propose a routing rule with opt-in relaying. Open an issue in this repository and
+name the result. Contributions are credited in the paper.

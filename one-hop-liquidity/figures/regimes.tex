@@ -1,0 +1,21 @@
+% Figure: one-hop against two-hop routing for a borrower without credit.
+\begin{tikzpicture}[
+    acct/.style={circle, draw, thick, minimum size=9mm, inner sep=0pt, font=\small},
+    holder/.style={acct, fill=green!15},
+    line/.style={-{Stealth[length=2.3mm]}, thick},
+    lab/.style={font=\scriptsize, above=1pt},
+    note/.style={font=\scriptsize, align=center, below=2mm},
+  ]
+  \node[holder] (h1) at (-3.6,0) {$h_1$};
+  \node[acct] (b) at (0,0) {$b$};
+  \node[acct] (r) at (3.6,0) {$r$};
+  \node[holder] (h2) at (7.2,0) {$h_2$};
+  \node[note] at (h1.south) {holder};
+  \node[note] at (b.south) {borrower,\\no credit};
+  \node[note] at (r.south) {no credit};
+  \node[note] at (h2.south) {holder};
+  \draw[line, blue!65!black] (h1) -- node[lab, text=blue!65!black] {one hop: $\min\{c,\varphi(h_1)\}$} (b);
+  \draw[line, red!70!black, dashed] (r) -- node[lab, text=red!70!black] {relayed: up to $c$} (b);
+  \draw[line, red!70!black, dashed] (h2) -- node[lab, text=red!70!black] {up to $c$} (r);
+  \draw[decorate, decoration={brace, amplitude=5pt, mirror}, red!70!black] (0,-1.55) -- node[below=6pt, font=\scriptsize, align=center] {two hops: if $b$ defaults, $h_2$ is charged; $r$ pays nothing} (7.2,-1.55);
+\end{tikzpicture}
