@@ -1,0 +1,27 @@
+% Figure: lenders' return and loss probability by year at PD 5% (data/apy_by_year.csv).
+\begin{tikzpicture}
+  \begin{groupplot}[
+      group style={group size=2 by 1, horizontal sep=1.6cm},
+      width=0.47\linewidth, height=5.2cm,
+      xmin=1, xmax=30, xlabel={year},
+      tick label style={font=\footnotesize}, label style={font=\small},
+      legend style={font=\scriptsize, draw=none, fill=white, fill opacity=0.85, text opacity=1},
+    ]
+    \nextgroupplot[ylabel={mean return (\%)}, ymin=3, ymax=6.6, legend style={at={(0.97,0.03)}, anchor=south east}]
+    \addplot[thick, blue!65!black] table[x=year, y=el_rel_apy, col sep=comma] {data/apy_by_year.csv};
+    \addlegendentry{42\%, released}
+    \addplot[thick, dashed, blue!65!black] table[x=year, y=el_lock_apy, col sep=comma] {data/apy_by_year.csv};
+    \addlegendentry{42\%, locked}
+    \addplot[thick, red!70!black] table[x=year, y=rec_rel_apy, col sep=comma] {data/apy_by_year.csv};
+    \addlegendentry{65\%, released}
+    \addplot[thick, dashed, red!70!black] table[x=year, y=rec_lock_apy, col sep=comma] {data/apy_by_year.csv};
+    \addlegendentry{65\%, locked}
+    \addplot[dotted, gray, domain=1:30] {4.33};
+
+    \nextgroupplot[ylabel={P(lenders bear a loss) (\%)}, ymin=0, ymax=45]
+    \addplot[thick, blue!65!black] table[x=year, y=el_rel_p, col sep=comma] {data/apy_by_year.csv};
+    \addplot[thick, dashed, blue!65!black] table[x=year, y=el_lock_p, col sep=comma] {data/apy_by_year.csv};
+    \addplot[thick, red!70!black] table[x=year, y=rec_rel_p, col sep=comma] {data/apy_by_year.csv};
+    \addplot[thick, dashed, red!70!black] table[x=year, y=rec_lock_p, col sep=comma] {data/apy_by_year.csv};
+  \end{groupplot}
+\end{tikzpicture}

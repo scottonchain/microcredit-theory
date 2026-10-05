@@ -1,0 +1,636 @@
+\documentclass[11pt]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{mathptmx}
+\usepackage[margin=1in]{geometry}
+\usepackage[authoryear,round]{natbib}
+\usepackage{booktabs}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepgfplotslibrary{groupplots}
+\usepackage{caption}
+\usepackage[hidelinks]{hyperref}
+\hypersetup{pdftitle={Pricing Uncollateralized Microcredit on a Public Blockchain: Short Loans, Re-lending and a Locked First-Loss Reserve}, pdfauthor={Claude Code}}
+\usepackage{xcolor}
+
+\theoremstyle{plain}
+\newtheorem{proposition}{Proposition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{corollary}{Corollary}
+\theoremstyle{definition}
+\newtheorem{remark}{Remark}
+
+\makeatletter
+\newcommand{\inputrows}[1]{\@@input #1 }
+\makeatother
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\EL}{\mathrm{EL}}
+\newcommand{\UL}{\mathrm{UL}}
+
+\input{data/reserve_summary.tex}
+
+\title{Pricing Uncollateralized Microcredit on a Public Blockchain:\\Short Loans, Re-lending and a Locked First-Loss Reserve}
+\author{Claude Code\thanks{Claude Code is an AI agent made by Anthropic, working with the
+Microcredit Protocol Project; the research was directed by the project's human operator. See the
+disclosure at the end of the paper. Sources, data and code:
+\url{https://github.com/scottonchain/microcredit-theory}.}}
+\date{Working paper, 5 October 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent A pooled lending protocol on a public blockchain lends stablecoins for 30 days without
+collateral, and it funds a first-loss reserve from a share of the interest it collects. With no
+default history, its premium and reserve must be set from scenarios. We calibrate a one-factor model
+of portfolio default to such a pool and show how three features of the setting change the standard
+calculation. Loans are short and rolled, so per-loan default rates must be converted to annual
+probabilities: a default rate of 1\% per 30-day loan is an annual probability of 11.5\%. The pool
+re-lends after write-offs, which raises the 99.9\% loss quantile by 4.5 to 23\% over the static model,
+and we give the exact transform. A pool of 100 loans has a 99.9\% tail about a fifth above the
+asymptotic one. A premium of 500 basis points over the funding rate carries annual default
+probabilities up to 3.3\%, and probabilities of 3, 5 and 10\% need 600, 800 and 1,400 basis points.
+For the reserve, we prove that lenders' cumulative return equals gross interest less fees, losses and
+the reserve's final balance. The protocol never releases reserve funded by interest, so any reserve
+share above the ratio of expected loss to the loan rate is a permanent transfer from lenders. At the
+protocol's production settings, lenders' long-run expected return falls from \LongRunAtElFive\% to
+\LongRunLockedFive\%, below the \Effr\% funding rate. A reserve share at or modestly above expected
+loss keeps most of lenders' return, and further protection is cheaper as external first-loss capital.
+\end{abstract}
+
+\medskip
+\noindent\textbf{Keywords:} credit risk, Vasicek model, granularity adjustment, first-loss reserve,
+microcredit, decentralized finance.\quad \textbf{JEL:} G21, G23, G32.
+
+% ---------------------------------------------------------------------------------------------
+\section{Introduction}
+
+Lending protocols on public blockchains hold pooled deposits of stablecoins and lend them to
+borrowers \citep{gudgeon2020}. The deployed ones require collateral worth more than the loan
+\citep{leshner2019compound,aave2020}, so their credit risk is market risk on the collateral. This
+paper studies a pool that lends without collateral, to borrowers who lack it, on credit lines granted
+by an issuer and on backing from other accounts \citep{conservedcredit2026}. Its credit risk is the
+classic kind: unsecured loans default, and lenders bear what the pool's buffers do not.
+
+Three features of the pool set it apart from the bank portfolios that standard capital models were
+built for. Loans run for 30 days and are rolled, so a per-loan default rate is not an annual
+probability of default. The pool re-lends a slot as soon as its defaulted loan is written off, so it
+can suffer more than one default per slot in a year. And it is small, a few hundred loans, so the
+asymptotic single-factor model understates its tail. The pool also has a first-loss reserve, funded
+from a share of every interest payment, whose rules are set by the protocol rather than by the
+lenders: interest-funded reserve is never released to them.
+
+The pool has no default history, so no parameter can be estimated. We treat the annual probability
+of default (PD) and the asset correlation as scenarios and report every result conditional on them.
+The contributions are the following.
+
+\begin{itemize}
+\item \emph{Horizons} (Proposition~\ref{prop:horizon}). Under a constant hazard, a per-loan default
+  rate $p_T$ of a $T$-day loan is an annual PD of $1-(1-p_T)^{365/T}$, and defaults per exposure-year
+  with replacement lie between the PD and the hazard. A ``97\% repayment rate'' on 30-day loans is an
+  annual PD of 31\%.
+\item \emph{Re-lending} (Proposition~\ref{prop:replenish}). The loss per exposure-year of a pool that
+  replaces defaulted loans is an increasing function of the conditional PD, so its quantiles are the
+  same function of the Vasicek quantiles. Re-lending raises the 99.9\% quantile by 9\% at an annual
+  PD of 5\% and by 23\% at 20\%.
+\item \emph{Pricing} (Section~\ref{sec:pricing}). Break-even premiums at the loan and pool level,
+  with the cash drag of idle deposits, a protocol fee, re-lending and finite pools; the largest PD a
+  given premium carries; and the effect of stake-secured principal.
+\item \emph{A locked reserve} (Theorems~\ref{thm:identity} and~\ref{thm:longrun}). Lenders'
+  cumulative return equals gross interest net of fees, less losses, less the reserve's final balance,
+  under any release policy. When interest-funded reserve can never be released, lenders' long-run
+  expected return is $u\bigl[a(1-f)-\max\{\EL,\,ar\}\bigr]$ for utilisation $u$, loan rate $a$, fee
+  share $f$ and reserve share $r$. A reserve share above $\EL/a$ therefore costs lenders its excess
+  every year, for good.
+\end{itemize}
+
+The last result has a direct consequence for the protocol. Its production settings pair an 800
+basis-point premium with a reserve share of 65\%, chosen for a policy that released the reserve above
+a cap. Under the lock the protocol actually enforces, lenders' long-run expected return at an annual
+PD of 5\% is \LongRunLockedFive\%, below the funding rate of \Effr\%; with the reserve share at
+expected loss it is \LongRunAtElFive\%.
+
+Section~\ref{sec:pool} describes the pool. Section~\ref{sec:horizon} treats horizons,
+Section~\ref{sec:losses} the loss distribution, Section~\ref{sec:pricing} pricing and
+Section~\ref{sec:reserve} the reserve. Section~\ref{sec:limits} lists the limitations.
+
+% ---------------------------------------------------------------------------------------------
+\section{The Pool}\label{sec:pool}
+
+Lenders deposit a stablecoin into one pool and receive shares; borrowers draw from the same pool.
+Table~\ref{tab:pool} lists the terms that matter for credit risk. They are taken from the protocol's
+contract \citep{microcredit2026contract}.
+
+\begin{table}[ht]
+  \centering\small
+  \caption{Terms of the pool used in the calibration.}
+  \label{tab:pool}
+  \begin{tabular}{p{0.24\linewidth}p{0.68\linewidth}}
+    \toprule
+    Term & Value and treatment \\
+    \midrule
+    Loan rate & $a=$ funding rate $+$ premium, fixed at origination; the funding rate is the
+      effective federal funds rate, 4.33\% when deployed. Simple interest on the original
+      principal, none if repaid within 24 hours. \\
+    Term & 30 days by default (1 to 365 allowed), so $n=365/30\approx12.17$ loans per slot-year. \\
+    Recognition & Cash basis: interest is booked when paid, so a write-off removes principal only. \\
+    Default & A loan can be written off 30 days after its due date and can never be repaid
+      afterwards. Loss given default (LGD) is 100\% on unsecured principal. \\
+    Secured principal & Principal backed by staked stablecoins, which are slashed into the pool at
+      default: LGD 0. \\
+    Unsecured backing & Another account's credit, burned at default; it recovers no cash, so it does
+      not change LGD. \\
+    Utilisation & At most 90\% of lenders' assets lent; $u=85\%$ in the base case. \\
+    Fee & A share $f$ of interest, at most 20\%; 0 by default. \\
+    Reserve & A share $r$ of interest, at most 80\%, enters a first-loss reserve. The reserve is a
+      junior claim inside the pool, excluded from the value of lenders' shares; it pays losses before
+      them. Capital added by outsiders can be released to lenders; interest-funded reserve cannot. \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+The last row is the one that matters most below. The protocol credits each borrower's share of the
+reserve inflow to it as credit it can borrow against, and to keep that credit from being recaptured,
+it never releases interest-funded reserve \citep{conservedcredit2026}. This paper takes the rule as
+given and works out what it costs lenders.
+
+% ---------------------------------------------------------------------------------------------
+\section{Default Horizons}\label{sec:horizon}
+
+Write $p_T$ for the probability that a loan of $T$ days is never repaid, and PD, without a subscript,
+for the annual probability that a borrower who keeps rolling such loans defaults within a year, the
+horizon of the Basel framework \citep{bcbs2006}.
+
+\begin{proposition}[Horizons]\label{prop:horizon}
+Suppose that, conditional on the systematic factor, each of a borrower's successive loans defaults
+with the same probability, independently of earlier loans. Then
+\[
+  \mathrm{PD}=1-(1-p_T)^{n},\qquad n=365/T,
+\]
+the default time is exponential with hazard $\lambda=-\ln(1-\mathrm{PD})$, and if every defaulter is
+replaced at once, the expected number of defaults per exposure-year, $n\,p_T$, satisfies
+$\mathrm{PD}\le n\,p_T\le\lambda$ and increases with $n$.
+\end{proposition}
+
+\begin{proof}
+The borrower survives the year if it survives $n$ independent loans. With $x=\lambda/n$,
+$n\,p_T=n(1-e^{-\lambda/n})=\lambda(1-e^{-x})/x$. The function $(1-e^{-x})/x$ decreases in $x>0$
+from 1, so $n\,p_T$ increases in $n$, equals PD at $n=1$ and tends to $\lambda$ as $n\to\infty$.
+\end{proof}
+
+The assumption ignores two effects of opposite sign. Borrowers who have repaid are selected safer,
+and a borrower may default strategically on its last loan, when future access is worth least.
+Neither can be estimated without data. Table~\ref{tab:horizon} gives the conversion. The second
+panel shows why per-loan rates mislead: 1\% per 30-day loan is an annual PD of 11.5\%, and a
+``97\% repayment rate'' is 31\%. Default rates of this size are within the range reported for
+microfinance institutions \citep{cull2009}, so the conversion matters for the scenarios below.
+
+\begin{table}[ht]
+  \centering\small
+  \caption{Default horizons for 30-day loans under Proposition~\ref{prop:horizon}.}
+  \label{tab:horizon}
+  \begin{tabular}{rrrr}
+    \toprule
+    Annual PD & Per 30-day loan & Hazard $\lambda$ & Defaults per exposure-year, replaced \\
+    \midrule
+    \inputrows{data/table_horizon.tex}
+    \bottomrule
+  \end{tabular}
+  \par\medskip
+  \begin{tabular}{rrr}
+    \toprule
+    Per 30-day loan & Annual PD & Defaults per exposure-year, replaced \\
+    \midrule
+    \inputrows{data/table_loan_to_annual.tex}
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+% ---------------------------------------------------------------------------------------------
+\section{The Loss Distribution}\label{sec:losses}
+
+\subsection{The one-factor model}
+
+Borrower $i$ defaults within the year if $\sqrt{\rho}\,Z+\sqrt{1-\rho}\,\varepsilon_i<\Phi^{-1}(\mathrm{PD})$,
+with $Z$ and the $\varepsilon_i$ independent standard normal \citep{merton1974,vasicek2002}.
+Conditional on $Z$, defaults are independent with probability
+\[
+  p(Z)=\Phi\Bigl(\frac{\Phi^{-1}(\mathrm{PD})-\sqrt{\rho}\,Z}{\sqrt{1-\rho}}\Bigr),
+\]
+and in an infinitely granular pool the default rate converges to $D=p(Z)$, with loss rate
+$L=\mathrm{LGD}\cdot D$. Its $q$-quantile is
+$L_q=\mathrm{LGD}\cdot\Phi\bigl((\Phi^{-1}(\mathrm{PD})+\sqrt{\rho}\,\Phi^{-1}(q))/\sqrt{1-\rho}\bigr)$,
+the expected loss is $\EL=\mathrm{PD}\cdot\mathrm{LGD}$, and the unexpected loss at 99.9\%,
+$\UL=L_{0.999}-\EL$, is the Basel capital charge for retail exposures without its scaling factor
+\citep{gordy2003,bcbs2005}. The expected shortfall and the stop-loss transform $\E[(D-k)^+]$ also
+have closed forms in the bivariate normal distribution; Appendix~\ref{app:closed} gives them.
+
+For the correlation we use the Basel formula for other retail exposures, which falls from 0.16 to
+0.03 as PD rises \citep{bcbs2006}, and a grid from 0.02 to 0.30. The Basel value was calibrated on
+bank retail books. A small pool whose borrowers share a community, a region or income tied to
+crypto-assets is plausibly more correlated, which is what the upper end of the grid is for.
+
+\subsection{Re-lending}
+
+The Basel view is static: it follows the borrowers present at the start of the year. This pool
+re-lends a slot as soon as its defaulted loan is written off.
+
+\begin{proposition}[Re-lending]\label{prop:replenish}
+Fix the factor for the year, and suppose each slot is lent in $n$ consecutive loans with a defaulter
+replaced at once. Then the expected defaults per slot-year are $h\bigl(p(Z)\bigr)$ with
+$h(p)=n\bigl(1-(1-p)^{1/n}\bigr)$, and the $q$-quantile of the loss per exposure-year in an infinitely
+granular pool is $\mathrm{LGD}\cdot h(D_q)$, where $D_q$ is the Vasicek quantile.
+\end{proposition}
+
+\begin{proof}
+Given $Z$, each loan defaults with the per-loan probability $1-(1-p(Z))^{1/n}$ of
+Proposition~\ref{prop:horizon}, and a slot carries $n$ loans a year whatever happened to earlier
+ones. The function $h$ is increasing on $[0,1]$, so it maps quantiles of $p(Z)$ to quantiles of
+$h(p(Z))$.
+\end{proof}
+
+Re-lending changes little at the mean, 5.15\% against 5.00\% at an annual PD of 5\%, and more in the
+tail: the 99.9\% quantile rises by 4.5\% at PD 1\%, 8.7\% at 5\% and 23\% at 20\%
+(Table~\ref{tab:losses}). A revolving Monte Carlo with 500 slots, a one-term lag before write-off and
+the factor fixed for the year reproduces both the static and the replenished values. We use the
+static distribution in the tables, because it is the standard and citable object, and the
+replenished one in the pricing recommendation, because it is more conservative.
+
+\begin{table}[ht]
+  \centering\small
+  \caption{Loss rate per unit of exposure at the Basel correlation (LGD 100\%). The last two columns
+  are for a pool that re-lends after write-offs (Proposition~\ref{prop:replenish}).}
+  \label{tab:losses}
+  \begin{tabular}{rrrrrrrrr}
+    \toprule
+    PD & $\rho$ & EL & s.d. & $L_{0.99}$ & $L_{0.999}$ & ES$_{0.999}$ & EL, re-lent & $L_{0.999}$, re-lent \\
+    \midrule
+    \inputrows{data/table_losses.tex}
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{table}[ht]
+  \centering\small
+  \caption{The 99.9\% loss quantile on the correlation grid.}
+  \label{tab:rhogrid}
+  \begin{tabular}{rrrrrrrr}
+    \toprule
+    PD & Basel & 0.02 & 0.05 & 0.10 & 0.15 & 0.20 & 0.30 \\
+    \midrule
+    \inputrows{data/table_rho_grid.tex}
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{figure}[ht]
+  \centering
+  \input{figures/loss-density.tex}
+  \caption{Density of the annual loss rate at an annual PD of 5\%, at the Basel correlation (0.053)
+  and at 0.15. The mean is 5\% in both; the higher correlation moves mass into the tail.}
+  \label{fig:density}
+\end{figure}
+
+\subsection{Finite pools}
+
+A pool of 10,000 units lent in loans of 100 holds about 100 loans. Drawing $Z$ and then the number of
+defaults as Binomial$(N,p(Z))$ is exact for equal exposures, and a brute-force simulation of every
+borrower's latent variable confirms it. The analytic comparison is the first-order granularity
+adjustment of \citet{martin2002} and \citet{gordy2004}; see also \citet{gordy2013}. With $10^6$
+scenarios per cell, quantile confidence intervals come from order statistics.
+Table~\ref{tab:granularity} shows that at 100 loans the 99.9\% quantile is about a fifth above the
+asymptotic value, that the adjustment captures most of the gap, and that at 5,000 loans the gap is
+negligible. With 100 loans, losses come in steps of 1\%, so a confidence interval can collapse onto
+one point of the lattice.
+
+\begin{table}[ht]
+  \centering\small
+  \caption{The 99.9\% loss quantile of a finite pool at the Basel correlation: asymptotic,
+  asymptotic with the granularity adjustment, and Monte Carlo with a 95\% interval ($10^6$ scenarios).}
+  \label{tab:granularity}
+  \begin{tabular}{rrrrl}
+    \toprule
+    PD & Loans $N$ & Asymptotic & With adjustment & Monte Carlo \\
+    \midrule
+    \inputrows{data/table_granularity.tex}
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+% ---------------------------------------------------------------------------------------------
+\section{Pricing}\label{sec:pricing}
+
+\subsection{Break-even premiums}
+
+The loan rate is the funding rate plus a premium $s$. Lenders' opportunity cost is the funding
+rate, so it passes through, and the loan-level break-even premium is
+\begin{equation}\label{eq:sloan}
+  s^*=\EL+h\cdot\UL,
+\end{equation}
+where $h$ is the required return in excess of the funding rate on risk capital $\UL$. In this pool
+the lenders are the capital, since there is no equity tranche. The pool adds two costs. Lenders earn
+nothing on the share $1-u$ of deposits held idle for withdrawals, and they pay the fee $f$ on interest.
+
+\begin{proposition}[Pool-level premium]\label{prop:pool}
+Per unit of deposits, lenders earn $u\,a(1-f)-u\,\EL$ in expectation and require the funding rate
+$e$ plus $h\,u\,\UL$ on the capital at risk. With $a=e+s$, the break-even premium is
+\[
+  s_{\mathrm{pool}}=\frac{e/u+\EL+h\,\UL}{1-f}-e.
+\]
+\end{proposition}
+
+\begin{proof}
+Solve $u(e+s)(1-f)-u\,\EL=e+h\,u\,\UL$ for $s$.
+\end{proof}
+
+At $u=85\%$ the cash drag alone adds $e(1/u-1)=76$ basis points. The formula is first order: it
+ignores interest lost on a defaulting loan, at most one term plus the late period, and compounding.
+Table~\ref{tab:premium} reports the premiums at a 15\% hurdle, Table~\ref{tab:maxpd} the largest PD
+that the deployed 500 basis points carries, and Figure~\ref{fig:premium} the premium against PD.
+
+\begin{table}[ht]
+  \centering\small
+  \caption{Break-even premium in basis points at a hurdle of 15\%: loan level at four correlations,
+  then at the Basel correlation re-lent, with 100 loans, and at the pool level ($u=85\%$, without and
+  with a 10\% fee).}
+  \label{tab:premium}
+  \begin{tabular}{rrrrrrrrr}
+    \toprule
+    & \multicolumn{4}{c}{Loan level, $\rho$} & \multicolumn{2}{c}{Basel $\rho$} & \multicolumn{2}{c}{Pool level} \\
+    \cmidrule(lr){2-5}\cmidrule(lr){6-7}\cmidrule(lr){8-9}
+    PD & Basel & 0.05 & 0.15 & 0.30 & re-lent & $N=100$ & $f=0$ & $f=10\%$ \\
+    \midrule
+    \inputrows{data/table_premium.tex}
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{table}[ht]
+  \centering\small
+  \caption{Largest annual PD whose break-even premium is at most 500 basis points, by hurdle; the
+  last column is the pool level at $u=85\%$ and $h=15\%$.}
+  \label{tab:maxpd}
+  \begin{tabular}{lrrrrr}
+    \toprule
+    $\rho$ & $h=0$ & $h=10\%$ & $h=15\%$ & $h=25\%$ & Pool, $h=15\%$ \\
+    \midrule
+    \inputrows{data/table_maxpd.tex}
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{figure}[ht]
+  \centering
+  \input{figures/premium.tex}
+  \caption{Loan-level break-even premium against annual PD at a 15\% hurdle. The dashed line is the
+  deployed premium of 500 basis points.}
+  \label{fig:premium}
+\end{figure}
+
+A premium of 500 basis points covers expected loss up to an annual PD of 5\% and nothing more. With
+a 15\% hurdle it carries PD up to 3.30\% at the loan level, or 0.28\% per 30-day loan, and 2.60\% once
+the cash drag is counted. At the higher correlation of 0.15 the two limits are 2.39\% and 1.94\%.
+Table~\ref{tab:recommendation} gives the premiums we recommend for the protocol at three scenario
+PDs: the pool-level premium, re-lent and adjusted for a pool of 500 loans, rounded up to 50 basis
+points. The contract has one premium for every loan, so it must be set for the riskiest PD it
+admits, or admission must keep the book within the PD it was priced for.
+
+\begin{table}[ht]
+  \centering\small
+  \caption{Premiums at the Basel correlation and a 15\% hurdle, in basis points, and the
+  recommendation.}
+  \label{tab:recommendation}
+  \begin{tabular}{rrrrrrr}
+    \toprule
+    PD & Per loan & Loan level & Pool level & Pool, re-lent, $N=500$ & Recommended & Loan rate \\
+    \midrule
+    \inputrows{data/table_recommendation.tex}
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Secured principal and backing}
+
+If a share $\sigma$ of every loan's principal is secured by stake, LGD is $1-\sigma$. The loss
+quantile is linear in LGD, so $\EL$, $\UL$ and $s^*$ all scale by $1-\sigma$, and with different
+shares per loan the asymptotic model adds them loan by loan \citep{gordy2003}. At the Basel
+correlation and a 15\% hurdle, 500 basis points breaks even with a secured share of 26\% at PD 5\% and
+58\% at PD 10\%.
+
+Unsecured backing recovers nothing, so it cannot lower LGD. If it has an effect, it is on PD: a
+backer who loses credit when the borrower defaults has reason to screen and monitor
+\citep{stiglitz1990peer,ghatak1999joint}. That effect is a hypothesis to estimate. A field experiment
+found no rise in default when a lender removed group liability \citep{gine2014group}, so it may be
+small. A single loan rate for backed and unbacked loans overprices backed loans if the effect is
+real, which invites adverse selection among the unbacked.
+
+% ---------------------------------------------------------------------------------------------
+\section{The First-Loss Reserve}\label{sec:reserve}
+
+\subsection{Sizing}
+
+A share $r$ of interest enters the reserve. Per unit of deposits its yearly inflow is $u\,a\,r$ and
+the losses it faces are $u\,L$, so utilisation cancels: a reserve that covers a loss rate $T$ needs
+$r=T/a$, which is feasible from interest only if $T/a\le1-f$. The reserve pays from the first unit of
+loss, so a reserve that covers $L_q-\EL$ keeps lenders' loss at most $u\,\EL$, the loss already
+priced, with probability $q$. Covering expected loss takes $r_{\EL}=\EL/a$, which at the recommended
+loan rates and re-lent losses is \RElThree\%, \RElFive\% and \RElTen\% at annual PDs of 3, 5 and 10\%.
+The calibration that preceded this paper recommended shares of \RRecThree\%, \RRecFive\% and
+\RRecTen\%: expected loss plus a third of the 99\% unexpected loss, with the balance capped at
+$u(L_{0.99}-\EL)$ and the surplus released to lenders. The protocol adopted the 65\% share for its
+production settings. It does not release interest-funded reserve.
+
+\subsection{An accounting identity}
+
+\begin{theorem}[Lenders' cumulative return]\label{thm:identity}
+Suppose the reserve is funded only from interest, pays only losses and releases to lenders, and starts
+empty. Then over any $T$ years and for every path of losses, lenders' cumulative return per unit of
+deposits is
+\[
+  \sum_{t=1}^{T}\mathrm{APY}_t=T\,u\,a(1-f)-\sum_{t=1}^{T}u\,L_t-R_T,
+\]
+where $L_t$ is the loss rate in year $t$ and $R_T$ the reserve's balance at the end.
+\end{theorem}
+
+\begin{proof}
+In year $t$ lenders receive $u\,a(1-f-r)$, bear the loss the reserve does not cover, $\ell_t$, and
+receive any release $x_t$. The reserve receives $u\,a\,r$, pays $u\,L_t-\ell_t$ and releases $x_t$,
+so $R_T=T\,u\,a\,r-\sum_t(u\,L_t-\ell_t)-\sum_tx_t$. Then
+$\sum_t\mathrm{APY}_t=T\,u\,a(1-f-r)-\sum_t\ell_t+\sum_tx_t$, and substituting
+$\sum_t\ell_t-\sum_tx_t=\sum_tu\,L_t+R_T-T\,u\,a\,r$ gives the claim.
+\end{proof}
+
+A reserve funded from lenders' own interest thus changes their return only through its final balance.
+It moves losses in time and smooths the share price, but whatever it still holds is lenders' money
+they will not receive. Under a policy that caps the balance and releases the rest, $R_T$ is bounded,
+and lenders' long-run return is that of no reserve. Under the protocol's rule it is not.
+
+\subsection{The locked reserve}
+
+\begin{theorem}[Long-run return under a lock]\label{thm:longrun}
+Suppose loss rates $L_t$ are independent across years with mean $\EL$ and finite variance, and the
+reserve is never released. Then lenders' average annual return converges almost surely:
+\[
+  \frac{1}{T}\sum_{t=1}^T\mathrm{APY}_t\;\longrightarrow\;u\bigl[a(1-f)-\max\{\EL,\ a\,r\}\bigr].
+\]
+\end{theorem}
+
+\begin{proof}
+With $X_t=u\,a\,r-u\,L_t$, the balance follows the Lindley recursion $R_t=\max\{R_{t-1}+X_t,0\}$
+\citep{lindley1952}. Its drift is $\mu=\E X_t=u(a\,r-\EL)$. If $\mu>0$ the reflected random walk is
+transient and $R_T/T\to\mu$ almost surely; if $\mu\le0$ it is recurrent or null recurrent and
+$R_T/T\to0$ almost surely \citep[Chapter~III]{asmussen2003}. By the strong law,
+$T^{-1}\sum_tu\,L_t\to u\,\EL$. Dividing Theorem~\ref{thm:identity} by $T$ gives the limit
+$u\,a(1-f)-u\,\EL-\max\{\mu,0\}$, which is the claim.
+\end{proof}
+
+A reserve share below $\EL/a$ leaves lenders' long-run return unchanged, because the reserve is
+emptied by losses as fast as it fills. Above $\EL/a$, every additional unit of share costs lenders
+$u\,a$ per year, for good: the excess accumulates in a balance they cannot receive. In the protocol
+that balance is not idle in purpose. It backs the credit that the protocol grants borrowers for the
+interest they have paid, and it absorbs defaults on that credit. The reserve share is therefore also
+the rate at which lenders' yield is converted into borrowers' credit, a choice of policy rather than
+of risk management.
+
+Figure~\ref{fig:years} and Table~\ref{tab:policy} simulate both policies at an annual PD of 5\%, with
+independent years, re-lent losses and 200,000 paths per case. Theorem~\ref{thm:identity} holds on every
+path to rounding error. At the production share of 65\%, the two policies give the same first year,
+3.43\%, because the reserve is filling. By year 5 the policy with release pays lenders 5.93\% and the
+locked one 3.66\%, and after 30 years the locked reserve holds 73\% of deposits. At the expected-loss
+share of 42\%, the two policies stay within 0.2 percentage points of each other, and from year 5 on
+lenders bear some loss in 8 to 20\% of years.
+
+\begin{table}[ht]
+  \centering\small
+  \caption{Lenders' mean annual return and the probability that they bear any loss in the year, by
+  year, at an annual PD of 5\% (Basel correlation, loan rate 12.33\%, $u=85\%$, $f=0$); the last column
+  is the mean reserve after 30 years as a share of deposits.}
+  \label{tab:policy}
+  \begin{tabular}{lrrrrrrrrr}
+    \toprule
+    & \multicolumn{2}{c}{Year 1} & \multicolumn{2}{c}{Year 5} & \multicolumn{2}{c}{Year 10} & \multicolumn{2}{c}{Year 30} & Reserve \\
+    \cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}\cmidrule(lr){8-9}
+    Reserve share and policy & Return & Loss & Return & Loss & Return & Loss & Return & Loss & year 30 \\
+    \midrule
+    \inputrows{data/table_reserve_policy.tex}
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{figure}[ht]
+  \centering
+  \input{figures/reserve-years.tex}
+  \caption{Lenders' mean annual return (left) and the probability that they bear any loss in the
+  year (right), at an annual PD of 5\%, for reserve shares of 42\% (expected loss) and 65\% (the
+  production setting), each with release above a cap and locked.}
+  \label{fig:years}
+\end{figure}
+
+Figure~\ref{fig:sweep} shows the trade-off the lock creates. The long-run return is flat in the
+reserve share up to $\EL/a$ and falls linearly beyond it, as Theorem~\ref{thm:longrun} states, while
+the probability of a loss in year 10 falls steeply just above $\EL/a$. At an annual PD of 5\%, a share
+of 50\%, about 1.2 times $\EL/a$, costs lenders 0.9 percentage points of long-run return and lowers the
+probability of a loss in year 10 from 14\% at the expected-loss share to 2.5\%. The production share of
+65\% costs 2.4 points and lowers it to 0.03\%.
+
+\begin{figure}[ht]
+  \centering
+  \input{figures/reserve-sweep.tex}
+  \caption{Locked reserve: lenders' mean return in year 30 (left; markers are the limit of
+  Theorem~\ref{thm:longrun}) and the probability of any lender loss in year 10 (right), against the
+  reserve share, at annual PDs of 3, 5 and 10\% and the recommended loan rates.}
+  \label{fig:sweep}
+\end{figure}
+
+\begin{corollary}[The production settings]\label{cor:production}
+At the production settings (premium 800 basis points, reserve share 65\%, $u=85\%$, $f=0$) and an
+annual PD of 5\%, lenders' long-run expected return under the lock is \LongRunLockedFive\%, against
+\LongRunAtElFive\% with the reserve share at expected loss and a funding rate of \Effr\%. The same
+comparison at PDs of 3 and 10\%, with the premiums and shares recommended for them, gives
+\LongRunLockedThree\% against \LongRunAtElThree\% and \LongRunLockedTen\% against \LongRunAtElTen\%.
+\end{corollary}
+
+\begin{proof}
+Theorem~\ref{thm:longrun} with the values of Table~\ref{tab:recommendation} and the re-lent expected
+losses of Table~\ref{tab:losses}.
+\end{proof}
+
+Under the lock, a lender earns less than the funding rate in the long run at every scenario PD, so the
+pool would not attract deposits that have the funding rate as their alternative. Three remedies follow
+from the analysis. The reserve share can be set at or modestly above $\EL/a$, which keeps lenders'
+return and accepts that they bear some losses in bad years. Protection beyond that can come from
+external first-loss capital, which the protocol accepts from anyone, absorbs losses before lenders,
+and, unlike interest-funded reserve, can release to lenders once it exceeds what the pool needs. Or the
+premium can be raised to pay for the lock, which by Proposition~\ref{prop:pool} means adding the excess
+share $\max\{0,r-\EL/a\}$ of the loan rate to the costs the premium must cover.
+
+% ---------------------------------------------------------------------------------------------
+\section{Limitations}\label{sec:limits}
+
+\begin{enumerate}
+\item One Gaussian factor. A fat-tailed factor or several factors (region, cohort, crypto-asset
+  markets) would fatten the tails; the quantiles here are lower bounds for a given correlation.
+\item PD and correlation are scenarios. The Basel retail correlation comes from bank books; the grid up
+  to 0.30 brackets more concentrated pools.
+\item Independent years in the reserve simulation. Credit cycles are serially correlated, which makes
+  long runs of losses, and so lender losses under a reserve at $\EL/a$, more likely than shown.
+\item A constant hazard across a borrower's loans, with no seasoning and no strategic default on the
+  last loan.
+\item Deterministic LGD, with no time value on the 60 days between disbursement and write-off.
+\item Equal exposures; concentration beyond the granularity adjustment is not modelled, which the
+  pool's maximum loan size limits.
+\item Simple yields, a fixed funding rate and exogenous utilisation. In stress, withdrawals would move
+  utilisation.
+\item Not modelled: fraud by the issuer of credit lines, smart-contract failure, a loss of the
+  stablecoin's peg, and loans repaid within 24 hours, which pay no interest yet carry some risk.
+\end{enumerate}
+
+% ---------------------------------------------------------------------------------------------
+\section{Conclusion}
+
+Pricing uncollateralized credit in an on-chain pool is standard portfolio credit risk once three
+corrections are made: convert per-loan default rates to annual ones, account for re-lending, and
+correct the tail for the pool's small size. With them, the deployed premium of 500 basis points is
+adequate only for annual PDs up to about 3\%, and microfinance-like PDs of 5 to 10\% need 800 to 1,400.
+The reserve is where the protocol's rules matter. A reserve funded from lenders' interest can only
+re-time their losses, and when it can never be released, any share above expected loss is a permanent
+transfer to the credit it backs. Set at expected loss, it keeps lenders' return; set at the production
+level, it pushes that return below the funding rate. The choice of reserve share is therefore a choice
+between lenders' yield and borrowers' earned credit, and it should be made as one.
+
+\paragraph{Disclosure of AI authorship.} This paper was written by Claude Code, an AI agent made by
+Anthropic, working with the project's human operator, who set the research direction. The calibration
+code was written by AI agents working with the project; the simulation of the locked reserve is this
+paper's own. All of it is public and reproducible.
+
+{\sloppy\paragraph{Data and code availability.} The calibration code and results, at commit b725a85,
+are in \texttt{analysis/credit\_risk} of
+\url{https://github.com/scottonchain/microcredit-contract}. The reserve simulation and the scripts
+that extract every table and figure are in \url{https://github.com/scottonchain/microcredit-theory}.\par}
+
+\bibliographystyle{apalike}
+\bibliography{references}
+
+\appendix
+\section{Closed Forms}\label{app:closed}
+
+With $c=\Phi^{-1}(\mathrm{PD})$ and $\Phi_2(\cdot,\cdot;\varrho)$ the bivariate standard normal
+distribution function with correlation $\varrho$, the Vasicek default rate $D$ satisfies
+\begin{align*}
+  \mathrm{Var}\,D&=\Phi_2(c,c;\rho)-\mathrm{PD}^2,\\
+  \mathrm{ES}_q&=\mathrm{LGD}\cdot\frac{\mathrm{PD}-\Phi_2\bigl(c,\Phi^{-1}(q);-\sqrt{\rho}\bigr)}{1-q},\\
+  \E\bigl[(D-k)^+\bigr]&=\mathrm{PD}-\Phi_2\bigl(c,y_k;-\sqrt{\rho}\bigr)-k\bigl(1-\Phi(y_k)\bigr),\qquad
+  y_k=\frac{\sqrt{1-\rho}\,\Phi^{-1}(k)-c}{\sqrt{\rho}}.
+\end{align*}
+The first-order granularity adjustment to the $q$-quantile for $N$ equal loans is
+\[
+  \mathrm{GA}=\mathrm{LGD}\cdot\frac{\mu(1-\mu)(y-gb)-(1-2\mu)\,\varphi(g)\,b}{2N\varphi(g)\,b},
+\]
+with $y=\Phi^{-1}(q)$, $b=\sqrt{\rho/(1-\rho)}$, $g=(c+\sqrt{\rho}\,y)/\sqrt{1-\rho}$ and $\mu=\Phi(g)$
+\citep{martin2002,gordy2004}. Each is implemented in the contract repository's
+\texttt{analysis/credit\_risk/vasicek.py} and tested against quadrature, numerical differentiation or
+Monte Carlo there.
+
+\end{document}

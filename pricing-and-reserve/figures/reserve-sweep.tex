@@ -1,0 +1,28 @@
+% Figure: locked reserve, long-run return and loss probability against the reserve share
+% (data/reserve_sweep_curves.csv).
+\begin{tikzpicture}
+  \begin{groupplot}[
+      group style={group size=2 by 1, horizontal sep=1.6cm},
+      width=0.47\linewidth, height=5.2cm,
+      xmin=0.2, xmax=0.8, xlabel={reserve share $r$},
+      tick label style={font=\footnotesize}, label style={font=\small},
+      legend style={font=\scriptsize, draw=none, fill=white, fill opacity=0.85, text opacity=1},
+    ]
+    \nextgroupplot[ylabel={mean return, year 30 (\%)}, ymin=0, ymax=7.5, legend style={at={(0.03,0.03)}, anchor=south west}]
+    \addplot[thick, green!45!black] table[x=r, y=apy3, col sep=comma] {data/reserve_sweep_curves.csv};
+    \addlegendentry{PD 3\%}
+    \addplot[thick, blue!65!black] table[x=r, y=apy5, col sep=comma] {data/reserve_sweep_curves.csv};
+    \addlegendentry{PD 5\%}
+    \addplot[thick, red!70!black] table[x=r, y=apy10, col sep=comma] {data/reserve_sweep_curves.csv};
+    \addlegendentry{PD 10\%}
+    \addplot[only marks, mark=o, mark size=1.2pt, green!45!black, forget plot] table[x=r, y=f3, col sep=comma] {data/reserve_sweep_curves.csv};
+    \addplot[only marks, mark=o, mark size=1.2pt, blue!65!black, forget plot] table[x=r, y=f5, col sep=comma] {data/reserve_sweep_curves.csv};
+    \addplot[only marks, mark=o, mark size=1.2pt, red!70!black, forget plot] table[x=r, y=f10, col sep=comma] {data/reserve_sweep_curves.csv};
+    \addplot[dotted, gray, domain=0.2:0.8] {4.33};
+
+    \nextgroupplot[ylabel={P(lenders bear a loss), year 10 (\%)}, ymin=0, ymax=100]
+    \addplot[thick, green!45!black] table[x=r, y=p3, col sep=comma] {data/reserve_sweep_curves.csv};
+    \addplot[thick, blue!65!black] table[x=r, y=p5, col sep=comma] {data/reserve_sweep_curves.csv};
+    \addplot[thick, red!70!black] table[x=r, y=p10, col sep=comma] {data/reserve_sweep_curves.csv};
+  \end{groupplot}
+\end{tikzpicture}

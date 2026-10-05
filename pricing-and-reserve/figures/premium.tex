@@ -1,0 +1,23 @@
+% Figure: loan-level break-even premium against annual PD (data/premium_curve.csv).
+\begin{tikzpicture}
+  \begin{axis}[
+      width=0.72\linewidth, height=5.6cm,
+      xmode=log, xmin=0.5, xmax=20,
+      xtick={0.5,1,2,3,5,10,20}, xticklabels={0.5,1,2,3,5,10,20},
+      ymin=0, ymax=3200,
+      xlabel={annual PD (\%)}, ylabel={break-even premium (bps)},
+      tick label style={font=\footnotesize}, label style={font=\small},
+      legend style={font=\footnotesize, draw=none, at={(0.03,0.97)}, anchor=north west},
+      scaled y ticks=false, yticklabel style={/pgf/number format/fixed, /pgf/number format/1000 sep={,}},
+    ]
+    \addplot[thick, blue!65!black] table[x=pd_pct, y=basel, col sep=comma] {data/premium_curve.csv};
+    \addlegendentry{Basel $\rho$}
+    \addplot[thick, green!45!black] table[x=pd_pct, y=rho005, col sep=comma] {data/premium_curve.csv};
+    \addlegendentry{$\rho=0.05$}
+    \addplot[thick, orange!80!black] table[x=pd_pct, y=rho015, col sep=comma] {data/premium_curve.csv};
+    \addlegendentry{$\rho=0.15$}
+    \addplot[thick, red!70!black] table[x=pd_pct, y=rho030, col sep=comma] {data/premium_curve.csv};
+    \addlegendentry{$\rho=0.30$}
+    \addplot[dashed, gray, domain=0.5:20] {500};
+  \end{axis}
+\end{tikzpicture}
