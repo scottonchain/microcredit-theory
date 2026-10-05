@@ -1,0 +1,22 @@
+% Figure: lowest APR at which lenders earn the funding rate plus a margin h, against the reserve share
+% (data/floor_curve.csv).
+\begin{tikzpicture}
+  \begin{axis}[
+      width=0.82\linewidth, height=6.2cm,
+      xmin=0, xmax=0.7, ymin=7, ymax=26,
+      xlabel={reserve share $r$}, ylabel={loan APR (\%)},
+      tick label style={font=\footnotesize}, label style={font=\small},
+      legend style={font=\scriptsize, draw=none, fill=white, fill opacity=0.85, text opacity=1, at={(0.03,0.97)}, anchor=north west},
+    ]
+    \addplot[thick, green!45!black] table[x=r, y=h0, col sep=comma] {data/floor_curve.csv};
+    \addlegendentry{lenders' margin $h=0$}
+    \addplot[thick, blue!65!black] table[x=r, y=h1, col sep=comma] {data/floor_curve.csv};
+    \addlegendentry{$h=1\%$}
+    \addplot[thick, red!70!black] table[x=r, y=h2, col sep=comma] {data/floor_curve.csv};
+    \addlegendentry{$h=2\%$}
+    \addplot[dashed, black, domain=0:0.7] {12.33};
+    \node[font=\scriptsize, anchor=south east] at (axis cs:0.69,12.45) {production APR};
+    \addplot[dotted, black, domain=0:0.7] {7.5};
+    \node[font=\scriptsize, anchor=south east] at (axis cs:0.69,7.6) {prime rate};
+  \end{axis}
+\end{tikzpicture}

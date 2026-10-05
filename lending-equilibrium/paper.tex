@@ -1,0 +1,768 @@
+\documentclass[preprint,11pt,authoryear]{elsarticle}
+
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepgfplotslibrary{groupplots}
+\usepackage[margin=1in]{geometry}
+\usepackage[hidelinks]{hyperref}
+\hypersetup{pdftitle={Pricing the Reserve: Market Equilibrium, Lender Safety and Liquidity in an Uncollateralized On-Chain Lending Pool}, pdfauthor={Claude Code}}
+
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\theoremstyle{definition}
+\newtheorem{remark}{Remark}
+
+\makeatletter
+\newcommand{\inputrows}[1]{\@@input #1 }
+\makeatother
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\EL}{\mathrm{EL}}
+\newcommand{\Prob}{\mathbb{P}}
+
+\input{data/summary.tex}
+
+\journal{Journal of Financial Intermediation}
+
+\begin{document}
+
+\begin{frontmatter}
+
+\title{Pricing the Reserve: Market Equilibrium, Lender Safety and Liquidity\\in an Uncollateralized On-Chain Lending Pool}
+
+\author{Claude Code\fnref{fn1}}
+\fntext[fn1]{Claude Code is an AI agent made by Anthropic, working with the Microcredit Protocol
+Project; the research was directed by the project's human operator. Sources, data and code:
+\url{https://github.com/scottonchain/microcredit-theory}.}
+\affiliation{organization={Microcredit Protocol Project}, country={International}}
+
+\begin{abstract}
+A lending pool on a public blockchain lends stablecoins without collateral and sets aside a share of
+every interest payment in a first-loss reserve that it never releases. We ask which share, together
+with which loan rate and utilisation, clears the market for such a pool when lenders and borrowers
+both respond to its terms and the pool must stay liquid. The loan rate obeys an identity: it equals
+the lenders' alternative return, the drag of idle cash, the margin that attracts lenders, and the
+larger of expected loss and the reserve's share of the rate. We prove that the equilibrium exists
+and is unique; that the share is free to lenders in the long run up to the share that covers
+expected loss and costs them one for one beyond it; and that the cost is divided between borrowers
+and lenders by the elasticities of demand and supply, as in tax incidence. When lenders also care
+about the chance of losing principal, a volume-maximising share exists that is never below the share
+that covers expected loss, and a first-order condition characterises it. For a book with a 5\%
+annual default probability and an 800 basis point premium, loan volume stays within 1\% of its
+maximum for shares of \LoNinetyNine\ to \HiNinetyNine\%, a seed of outside capital of 1\% of deposits
+buys the protection of three points of share at less than half the cost, and the pool's own
+structure bounds the time to exit at one loan term. The elasticities are scenarios, not estimates.
+\end{abstract}
+
+\begin{keyword}
+financial intermediation \sep loan pricing \sep first-loss capital \sep tax incidence \sep liquidity \sep decentralized finance
+\end{keyword}
+
+\end{frontmatter}
+
+% ---------------------------------------------------------------------------------------------
+\section{Introduction}
+
+A lending pool on a public blockchain takes deposits in a stablecoin and lends them for 30 days
+without collateral. Its borrowers lack a credit history, stable banking or existing digital assets,
+and the pool lends against credit that an issuer grants, that others stake or back, or that
+borrowers earn by paying interest \citep{conservedcredit2026}. To protect lenders, the pool sets
+aside a share $r$ of every interest payment in a first-loss reserve, which pays losses before
+lenders do. The protocol never releases a reserve that interest has funded, because the same share
+is credited to the borrower as credit it can draw on, and releasing it would let that credit be
+recaptured. How large should $r$ be?
+
+The question is not only one of risk. A larger share protects lenders but costs them: interest
+that goes to the reserve is interest they do not receive, and a reserve that is never released
+grows without limit once its inflow exceeds losses \citep{pricingreserve2026}. Lenders can move
+deposits to other pools. If the net yield falls, deposits fall, the pool lends less, and borrowers
+who have nowhere else to borrow are left without a loan. The loan rate can rise to compensate, but
+borrowers respond to the rate. And the pool has to stay liquid: lenders can withdraw on demand while
+borrowers hold their loans for a month. This paper puts these forces in one model and asks which
+share, loan rate and utilisation clear the market and meet a liquidity target.
+
+A natural first guess is that the loan rate is a floor, such as the prime rate, plus a charge for the
+reserve, plus a margin that attracts lenders. Proposition~\ref{prop:identity} makes that exact, with
+two corrections. The floor that matters is the lenders' alternative return, not a bank's lending rate,
+and every term is scaled by utilisation and by the share of interest that lenders keep.
+
+\paragraph{Results} We prove five groups of results and compute them for a scenario.
+\begin{enumerate}
+\item \emph{The rate identity} (Proposition~\ref{prop:identity}). Any loan rate $a$ at which lenders
+  earn $e+x$ satisfies $(1-f)\,a = (e+x)/u + \max\{\EL,\ a\,r\}$, with funding rate $e$, fee share
+  $f$, utilisation $u$ and expected loss $\EL$. The reserve share costs lenders nothing in the long
+  run while $a\,r\le\EL$ and costs them $u\,a$ per unit of share beyond.
+\item \emph{Equilibrium and incidence} (Propositions~\ref{prop:eq} and~\ref{prop:incidence}). The
+  market has a unique equilibrium. A rise in $r$ raises the equilibrium rate and lowers volume, and
+  borrowers bear the share $\varepsilon/(\eta+\varepsilon)$ of the cost through the rate, with $\eta$
+  and $\varepsilon$ the elasticities of demand and supply.
+\item \emph{Lender safety and the volume-maximising share} (Lemma~\ref{lem:mono} and
+  Proposition~\ref{prop:rhat}). If lenders also require a low probability of losing principal, some
+  volume-maximising share is never below the share that covers expected loss, and a seed of outside
+  first-loss capital raises volume at every share.
+\item \emph{Liquidity} (Proposition~\ref{prop:liquidity}). A run on a pool of 30-day loans is paid
+  within one loan term, and the utilisation that meets a target for the time to exit is explicit.
+\item \emph{Earned credit} (Proposition~\ref{prop:growth}). A borrower's credit from dues grows at
+  the rate $r\,a$ a year, so the reserve share is a slow engine of borrower growth.
+\end{enumerate}
+In a scenario with a 5\% annual default probability and the production premium of
+\PremBps\ basis points (a loan rate of \ARef\%), the share that covers expected loss is \RC\%,
+loan volume stays within 1\% of its maximum for shares between \LoNinetyNine\% and \HiNinetyNine\%,
+and at 65\% it has fallen to \VSixtyFiveBase\ of its level at $r_c$ in the base case
+(Section~\ref{sec:numbers}). A seed of 1\% of deposits replaces three points of share at less than half the
+cost. The best share moves with the book's default risk: it is about four to six points above the share that
+covers expected loss in each of three books.
+
+\paragraph{Related work} Raising a capital buffer raises the price of credit when equity is dearer
+than funding \citep{bcbs2010}. We obtain the same logic for a buffer that lenders fund from their
+own interest and cannot withdraw. The incidence of that cost among lenders and borrowers follows
+the elasticity formula of tax incidence \citep{harberger1962,fullerton2002}, with the reserve share
+as the wedge between the loan rate and the lenders' yield. When higher rates raise default, lenders'
+returns can bend back and credit is rationed \citep{stiglitz1981}. We treat that case as an
+extension (Section~\ref{sec:limits}), because the reserve shields lenders from it as long as the
+reserve covers losses. Evidence on the elasticity of loan demand among borrowers with little access
+to credit shows demand curves that slope down, steeply above a lender's usual rate
+\citep{karlan2008}, with a mean elasticity near $-1$ among clients of one microfinance institution
+\citep{bogan2015}. On the lenders' side, we model a probability of losing principal that lenders will
+tolerate, in the safety-first tradition \citep{roy1952,telser1955}, and a requirement that exit
+be possible in a stated time, which echoes the liquidity constraints of intermediaries that fund
+illiquid loans with demandable claims \citep{diamond1983,holmstrom1998}. Decentralized lending pools
+set rates by utilisation \citep{leshner2019compound,aave2020,gudgeon2020}; this pool fixes the rate
+at origination and limits utilisation by a cap instead.
+
+The next section lists the features of the pool that the model takes as given. Sections~\ref{sec:model} to~\ref{sec:growth} build the model and prove the results, and
+Section~\ref{sec:numbers} computes them. Section~\ref{sec:limits} states the limits, and
+Section~\ref{sec:implications} draws the implications for the choice of the share.
+
+% ---------------------------------------------------------------------------------------------
+\section{The pool}\label{sec:pool}
+
+The model uses the following features of the protocol's contract \citep{microcredit2026contract}.
+\begin{itemize}
+\item \emph{Loans and the rate.} Loans last $T=30$ days, accrue simple interest, and carry a fixed annual
+  rate $a=e+s$ that the pool sets at origination: the funding rate $e$ (the effective federal funds
+  rate, 4.33\% when deployed) plus a premium $s$. A share $f$ of interest goes to the protocol.
+\item \emph{The reserve.} A share $r\in[0,1-f)$ of each interest payment joins the first-loss reserve $R$,
+  which pays default losses before lenders do. Interest-funded reserve is never released. Anyone may
+  add capital with \texttt{fundReserve}, which we call a seed. The contract would release seed
+  capital only above all interest-funded reserve and provisions, so we treat it as locked.
+\item \emph{Earned credit.} The share $r$ of interest that a borrower pays is added to its dues, which
+  count as credit the borrower can draw on.
+\item \emph{Utilisation.} New loans must keep lent principal at or below 90\% of lenders' assets and must
+  leave 5\% of assets in cash. Lenders' assets exclude the reserve, which is a junior claim.
+\item \emph{Liquidity.} The reserve's cash stays in the pool's cash balance. It therefore counts toward the
+  buffer for new loans and toward cash available for withdrawals, but not toward the base on which the
+  utilisation cap is computed. Withdrawals that cannot be paid at once join a queue, and a new loan
+  must leave enough cash for everything queued, so repayments reach the queue first.
+\end{itemize}
+Table~\ref{tab:inputs} lists the inputs of the numerical scenario. They are scenarios, not estimates:
+the pool has no default history, and the elasticities below have not been measured for it.
+
+\begin{table}[ht]
+  \centering\small
+  \caption{Inputs of the scenario that the numerical sections use.}
+  \label{tab:inputs}
+  \begin{tabular}{p{0.34\linewidth}p{0.58\linewidth}}
+    \toprule
+    Input & Value \\
+    \midrule
+    Funding rate $e$, fee $f$ & \Effr\%, $0$ \\
+    Premium and loan rate $a$ & \PremBps\ bps, \ARef\% \\
+    Utilisation $u$ & \UBase\% (the contract's cap is 90\%) \\
+    Default risk & annual probability 5\%, one-factor model at the Basel retail correlation, re-lent;
+      expected loss $\EL=\ELre\%$ per exposure-year \citep{pricingreserve2026} \\
+    Share that covers expected loss & $r_c=\EL/a=\RC\%$ \\
+    Safety horizon $H$ & 10 years \\
+    Borrowers' demand & constant elasticity $\eta=1$ (varied) \\
+    Lenders' margin $\theta$ & exponential with mean $\tau=1\%$ (varied) \\
+    Tolerated chance $\alpha$ of losing principal & exponential with mean $\bar\alpha=10\%$ (varied) \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+% ---------------------------------------------------------------------------------------------
+\section{The model}\label{sec:model}
+
+\subsection{Lenders' return}
+
+Per unit of deposits, the pool lends a fraction $u$ and collects interest $u\,a$ a year. In year $t$
+a loss rate $L_t\in[0,\bar L]$ on lent principal arises, with mean $\E L_t=\EL$. The reserve $R_t$ per
+unit of deposits starts at the seed $k\ge 0$, gains $u\,a\,r$ a year, and pays $u\,L_t$ first. Lenders
+receive interest $u\,a\,(1-f-r)$ less the loss the reserve cannot pay:
+\begin{equation}\label{eq:recursion}
+  R_t=\max\{R_{t-1}+u\,a\,r-u\,L_t,\,0\},\qquad \ell_t=\max\{u\,L_t-R_{t-1}-u\,a\,r,\,0\},\qquad Y_t=u\,a\,(1-f-r)-\ell_t,
+\end{equation}
+where $Y_t$ is lenders' return in year $t$ per unit of deposits.
+
+\begin{lemma}[Lenders' return]\label{lem:return}
+For every path, $\sum_{t\le T}Y_t=T\,u\,a\,(1-f)-u\sum_{t\le T}L_t-(R_T-k)$. If the $L_t$ are independent
+with common mean $\EL$, then almost surely
+\begin{equation}\label{eq:longrun}
+  \frac1T\sum_{t\le T}Y_t\longrightarrow y(a,r):=u\bigl[a\,(1-f)-\max\{\EL,\ a\,r\}\bigr].
+\end{equation}
+\end{lemma}
+
+The first statement is an accounting identity: lenders' cumulative return is interest net of the fee,
+less losses, less what the reserve has accumulated. The second says that, in the long run, a share
+$r\le\EL/a$ costs lenders nothing, because the reserve is emptied by losses as fast as it fills, and a
+share above that costs them $u\,a$ per unit of share, because the excess accumulates in a balance
+they cannot receive. Lemma~\ref{lem:return} restates and proves, for independent years, the
+long-run result of \citet{pricingreserve2026}; the proof is in the appendix.
+
+\subsection{Participation}
+
+Lenders differ in what they require. A lender of type $(\theta,\alpha)$ deposits if the long-run
+yield covers the funding rate plus its required margin, $y(a,r)\ge e+\theta$, and if the probability
+$p_H(r,k,a)$ that its return is negative in some year of the first $H$ years does not exceed its
+tolerance, $p_H\le\alpha$. Types are independent. Let $G$ be the distribution of $\theta$ and
+$A(p)=\Prob(\alpha\ge p)$ the share of lenders (by capacity $\bar V$) who tolerate a probability $p$,
+with $A$ nonincreasing and $A(0)=1$. The volume that lenders fund is
+\begin{equation}\label{eq:supply}
+  V^s(y,p)=\bar V\,G(y-e)\,A(p),
+\end{equation}
+that is, utilisation times deposits. Without a safety requirement, $A\equiv1$, and the volume
+$V^s(y)=\bar V\,G(y-e)$ has the inverse $\psi(V)=G^{-1}(V/\bar V)$: the margin over the funding rate
+that the marginal lender requires to fund volume $V$. The elasticity of supply is
+$\varepsilon=d\ln V^s/d\ln y=y/(V\psi'(V))$.
+
+\subsection{Borrowers}
+
+Borrowers' demand $V^d(a)$ for loans is continuous and strictly decreasing in the loan rate, with
+elasticity $\eta=-d\ln V^d/d\ln a$. One study of the clients of a microfinance institution puts the mean
+elasticity near $-1$ \citep{bogan2015}, and a field experiment found demand curves that slope downward, steeply for
+increases above the lender's usual rate \citep{karlan2008}. Neither is a measurement for this pool.
+
+\subsection{Liquidity}
+
+Lenders can withdraw on demand. A run of a fraction $W$ of deposits at one moment is paid first
+from cash, $(1-u)+c$ per unit of deposits, where $c=R/D$ is the reserve's cash cushion, and then
+from repayments as loans mature. Section~\ref{sec:liquidity} derives the time to exit.
+
+\subsection{Equilibrium}
+
+Given the pool's choices of the reserve share $r$, seed $k$ and utilisation $u$, an
+\emph{equilibrium} is a loan rate $a$ and a volume $V$ with $V=V^d(a)$ and $V=V^s(y(a,r),p_H(r,k,a))$:
+lenders fund exactly what borrowers demand at the rate. If the pool sets a rate other than the
+equilibrium rate, volume is the smaller of supply and demand.
+
+% ---------------------------------------------------------------------------------------------
+\section{The rate and its floor}\label{sec:floor}
+
+\begin{proposition}[Rate identity and floor]\label{prop:identity}
+Let lenders earn $e+x$ in the long run, $y(a,r)=e+x$ with $x\ge0$. Then
+\begin{equation}\label{eq:identity}
+  (1-f)\,a\;=\;\frac{e}{u}\;+\;\frac{x}{u}\;+\;\max\{\EL,\ a\,r\}.
+\end{equation}
+The lowest loan rate that gives lenders $e+x$ is
+\begin{equation}\label{eq:floor}
+  \underline a(r;x)=\max\Bigl\{\frac{(e+x)/u+\EL}{1-f},\ \frac{e+x}{u\,(1-f-r)}\Bigr\}.
+\end{equation}
+It is constant in $r$ up to $\bar r(x)=\EL/a_0(x)$, where $a_0(x)=((e+x)/u+\EL)/(1-f)$, and beyond it
+is strictly increasing and convex, with slope $\underline a/(1-f-r)$, and tends to infinity as
+$r\to 1-f$.
+\end{proposition}
+
+Read \eqref{eq:identity} as the sentence ``the rate is the floor, the idle-cash drag, the margin that
+attracts lenders, and the reserve''. The floor is $e$, lenders' alternative. Because only a fraction $u$
+of deposits earns interest, lenders need $e/u$ per dollar lent to earn $e$ per dollar deposited, so the
+drag is $e(1/u-1)$ and the margin is $x/u$. The last term is the interest withheld from lenders: expected
+loss, or the reserve share of the rate if that is larger. With $f=0$, at the production rate and $r=45\%$,
+the terms are $\Effr\%$, $\IdleDrag\%$, $\MarginAtFortyFive\%$ and $\ReserveTermFortyFive\%$, and at
+$r=65\%$ the margin is $\MarginAtSixtyFive\%$: lenders earn less than the funding rate
+(Table~\ref{tab:decomposition}). The share at which lenders earn exactly $e$ at the production rate is
+$1-f-e/(u\,a)=\RMaxLenders\%$.
+
+\begin{table}[ht]
+  \centering\small
+  \caption{Decomposition of the production loan rate, $f=0$ (identity~\eqref{eq:identity}). Columns: reserve
+  share $r$ (\%); funding rate $e$; idle-cash drag $e(1/u-1)$; lenders' margin per dollar lent, $x/u$;
+  interest withheld, $\max\{\EL,a\,r\}$, of which above expected loss; lenders' long-run yield $e+x$ (\%). The terms
+  of the first four sum to $\ARef\%$.}
+  \label{tab:decomposition}
+  \begin{tabular}{rrrrrrr}
+    \toprule
+    $r$ & $e$ & drag & $x/u$ & withheld & above $\EL$ & yield \\
+    \midrule
+    \inputrows{data/table_decomposition.tex}
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Figure~\ref{fig:floor} and Table~\ref{tab:floor} give the floor $\underline a(r;h)$ for lenders who require a
+margin $h$ over the funding rate. At no margin it is flat at \AFreeZero\% up to $r=\RBarZero\%$ and rises after.
+The production rate leaves \MarginRoom\ points of room above it, which is what a reserve share between $\RC\%$ and
+$\RMaxLenders\%$ spends. For scale, the prime rate was \PrimeIllus\% when the funding rate was
+4.33\% (an external input: by convention, the upper bound of the federal funds target range plus three points); the pool's floor lies
+above it, because expected loss alone is $\ELre\%$.
+
+\begin{figure}[ht]
+  \centering
+  \input{figures/floor.tex}
+  \caption{The lowest APR at which lenders earn the funding rate plus a margin $h$, against the reserve
+  share (Proposition~\ref{prop:identity}); $u=\UBase\%$, $\EL=\ELre\%$.}
+  \label{fig:floor}
+\end{figure}
+
+\begin{table}[ht]
+  \centering\small
+  \caption{The floor $\underline a(r;h)$ (\%) by reserve share $r$ (\%) and lenders' margin $h$.}
+  \label{tab:floor}
+  \begin{tabular}{rrrr}
+    \toprule
+    $r$ & $h=0$ & $h=1\%$ & $h=2\%$ \\
+    \midrule
+    \inputrows{data/table_floor.tex}
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+% ---------------------------------------------------------------------------------------------
+\section{Equilibrium and incidence}\label{sec:eq}
+
+\begin{proposition}[Equilibrium]\label{prop:eq}
+Without a safety requirement ($A\equiv1$), let $\psi$ be continuous and strictly increasing with $\psi(0)=0$
+and $\psi(V)\to\infty$ as $V\to\bar V$, and let $V^d$ be continuous and strictly decreasing with $V^d(a)\to0$
+as $a\to\infty$. For every
+$r\in[0,1-f)$ there is exactly one equilibrium $(a^*,V^*)$. It satisfies
+\begin{equation}\label{eq:eqrate}
+  (1-f)\,a^*=\frac{e+\psi(V^*)}{u}+\max\{\EL,\ a^*r\},\qquad V^*=V^d(a^*).
+\end{equation}
+The equilibrium rate $a^*$ is nondecreasing in $r$, and strictly increasing wherever $a^*r>\EL$. Volume
+$V^*$ and lenders' margin $\psi(V^*)$ are nonincreasing in $r$.
+\end{proposition}
+
+\begin{proposition}[Incidence]\label{prop:incidence}
+Where $a^*r>\EL$ and the primitives are differentiable,
+\begin{equation}\label{eq:incidence}
+  \frac{d\ln a^*}{dr}=\frac{\varepsilon}{\eta+\varepsilon}\cdot\frac1{1-f-r},\qquad
+  \frac{d\ln V^*}{dr}=-\frac{\eta\,\varepsilon}{\eta+\varepsilon}\cdot\frac1{1-f-r},\qquad
+  \frac{d\ln y^*}{dr}=-\frac{\eta}{\eta+\varepsilon}\cdot\frac1{1-f-r},
+\end{equation}
+where $\eta$ and $\varepsilon$ are the elasticities of demand and supply at the equilibrium and $y^*=y(a^*,r)$
+is lenders' yield.
+\end{proposition}
+
+The reserve share acts as a tax of rate $r/(1-f)$ on lenders' interest, collected into a balance they cannot
+draw. As with any tax, its burden is divided by elasticities. If lenders are perfectly elastic ($\varepsilon\to\infty$),
+borrowers bear all of it: the rate rises by $\underline a/(1-f-r)$ per unit of share, the floor of
+Proposition~\ref{prop:identity}. If borrowers are perfectly elastic, lenders bear all of it. Figure~\ref{fig:market} shows the
+mechanism: the share lifts the supply curve once the reserve term in \eqref{eq:identity} exceeds expected loss, and the
+equilibrium moves up the demand curve to a higher rate and a smaller volume. In the numerical scenario the formula
+\eqref{eq:incidence} matches the numerical derivative of the equilibrium rate to two decimals of a percent
+(Table~\ref{tab:incidence}).
+
+\begin{figure}[ht]
+  \centering
+  \input{figures/market.tex}
+  \caption{Borrowers' demand (constant elasticity $\eta=1$) and lenders' supply of loans for three reserve shares,
+  without a safety requirement ($\tau=1\%$). The dot is the production equilibrium at $r_c$.}
+  \label{fig:market}
+\end{figure}
+
+\begin{table}[ht]
+  \centering\small
+  \caption{Incidence check, $\eta=1$, $\tau=1\%$. Columns: reserve share (\%); supply elasticity $\varepsilon$ at
+  the equilibrium; borrowers' share of the cost through the rate, $\varepsilon/(\eta+\varepsilon)$ (\%);
+  $d\ln a^*/dr$ by numerical differentiation; the formula \eqref{eq:incidence}.}
+  \label{tab:incidence}
+  \begin{tabular}{rrrrr}
+    \toprule
+    $r$ & $\varepsilon$ & borrowers' share & numerical & formula \\
+    \midrule
+    \inputrows{data/table_incidence.tex}
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+% ---------------------------------------------------------------------------------------------
+\section{Lender safety and the volume-maximising share}\label{sec:safety}
+
+Expected return does not capture what a lender who thinks of its deposit as cash will accept. We use a
+safety-first criterion: lender $\alpha$ participates if the probability that its return is negative in some
+year of the first $H$ years does not exceed $\alpha$.
+
+\begin{lemma}[Monotone safety]\label{lem:mono}
+The principal-loss event $\{Y_t<0\text{ for some }t\le H\}$ equals $\{u\,L_t>u\,a\,(1-f)+R_{t-1}\text{ for some }t\le H\}$.
+Its probability $p_H(r,k,a)$ is nonincreasing in the reserve share $r$, the seed $k$ and the loan rate $a$.
+\end{lemma}
+
+\begin{proposition}[Volume-maximising share]\label{prop:rhat}
+Let supply be \eqref{eq:supply} with $A$ continuous and nonincreasing, $G$ continuous and strictly increasing, $V^d$ as in
+Proposition~\ref{prop:eq}, and let the distribution of the loss rates $L_t$ have no atoms, so that $p_H$ is continuous. An
+equilibrium then exists and is unique for every $(r,k)$.
+\begin{enumerate}
+\item A volume-maximising share $\hat r$ exists with $\hat r\,a^*(\hat r)\ge\EL$: at the maximum, the reserve's
+  inflow is at least expected loss at the equilibrium rate.
+\item If $\hat r$ is interior, $a^*(\hat r)\hat r>\EL$ and the primitives are differentiable, then
+  \begin{equation}\label{eq:foc}
+    s_y\cdot u\,a^*(\hat r)\;=\;s_p\cdot\pi_r,\qquad s_y=\frac{\partial\ln G(y-e)}{\partial y},\quad s_p=-\frac{A'(p)}{A(p)},\quad \pi_r=-\frac{\partial p_H}{\partial r},
+  \end{equation}
+  evaluated at the equilibrium: the yield that the marginal lender gives up for a point of share, valued at its
+  hazard of leaving, equals the reduction in the loss probability, valued at the safety hazard.
+\item Equilibrium volume $V^*$ is nondecreasing in the seed $k$ at every $r$.
+\end{enumerate}
+\end{proposition}
+
+Part 1 says that a share whose inflow falls short of expected loss is never worth choosing: raising it costs
+lenders nothing in the long run and makes the pool safer. Part 3 says that outside first-loss capital raises volume at every share.
+Whether it should replace share depends on its cost, which Section~\ref{sec:numbers} compares.
+
+% ---------------------------------------------------------------------------------------------
+\section{Liquidity}\label{sec:liquidity}
+
+Loans of term $T$ mature at a uniform rate if originations are staggered, so a fraction $dt/T$ of the loan book
+repays in each interval $dt$. Repayments go first to the queue of withdrawals.
+
+\begin{proposition}[Time to exit]\label{prop:liquidity}
+Suppose lenders request a fraction $W\le1$ of deposits at once, loans repay on time and uniformly over the term, and
+no new loan is made until the queue is paid. Let $q_0=(1-u)+c$ be the cash on hand per unit of deposits, with $c=R/D$ the
+reserve's cash cushion. The run is paid in full after
+\begin{equation}\label{eq:wait}
+  w(W)=T\,\frac{(W-q_0)^+}{u}
+\end{equation}
+days, so a full run takes $T\,(1-c/u)$ days at most. A run of size $W$ is paid within $\bar w$ days if and only if
+\begin{equation}\label{eq:ubound}
+  u\le\frac{T\,(1-W+c)}{T-\bar w}.
+\end{equation}
+\end{proposition}
+
+The pool is therefore liquid at the scale of one loan term: $\WaitFull$ days for a full run, $\WaitHalf$ days for a run
+of half the deposits and $\WaitQuarter$ days for a quarter, at $u=\UBase\%$ and no cushion. A 10\% cushion
+from the reserve cuts the full run to $\WaitFullCushion$ days. A tighter target bounds utilisation. A seven-day guarantee against
+a run of half the deposits needs $u\le\UMaxHalfWeek\%$ ($\UMaxHalfWeekCushion\%$ with a 10\% cushion), against the contract's
+90\% cap. By \eqref{eq:identity}, the lower utilisation raises the floor from \AFreeAtCap\% to \AFreeAtULiq\%: that is what the
+guarantee costs borrowers (Table~\ref{tab:liquidity}). Late repayments lengthen the wait: if a fraction $\pi$ of maturing
+loans does not repay on time, replace $u$ by $(1-\pi)u$ in \eqref{eq:wait}.
+
+\begin{figure}[ht]
+  \centering
+  \input{figures/liquidity.tex}
+  \caption{Days until a run is paid in full (Proposition~\ref{prop:liquidity}), $T=\TermDays$ days.}
+  \label{fig:liquidity}
+\end{figure}
+
+\begin{table}[ht]
+  \centering\small
+  \caption{Utilisation allowed by a liquidity target, and the floor at that utilisation. For a run of $W$ of deposits
+  and a wait of at most 3, 7 or 14 days: the largest utilisation (\%, capped at the contract's 90\%) and the loan
+  rate at which lenders earn $e$ with $r\le r_c$ (\%).}
+  \label{tab:liquidity}
+  \begin{tabular}{rrrrrrr}
+    \toprule
+    & \multicolumn{2}{c}{3 days} & \multicolumn{2}{c}{7 days} & \multicolumn{2}{c}{14 days} \\
+    \cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}
+    $W$ (\%) & $u$ & floor & $u$ & floor & $u$ & floor \\
+    \midrule
+    \inputrows{data/table_liquidity.tex}
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+% ---------------------------------------------------------------------------------------------
+\section{What the reserve share buys borrowers}\label{sec:growth}
+
+\begin{proposition}[Earned credit]\label{prop:growth}
+A borrower with own credit $\ell$ who keeps its whole limit drawn on rolling loans earns dues at rate
+$r\,a\,(\ell+d)$ and so holds a limit $\ell\,e^{r\,a\,t}$ after $t$ years. It doubles in $\ln 2/(r\,a)$ years, and each
+dollar of earned credit costs $1/r$ dollars of interest.
+\end{proposition}
+
+At the production rate and $r=45\%$ the limit grows at $\GrowthAtFortyFive\%$ a year and doubles in $\DoubleAtFortyFive$ years; at
+$65\%$ it grows at $\GrowthAtSixtyFive\%$ and doubles in $\DoubleAtSixtyFive$ years. Moving from 45\% to 65\% buys a borrower
+\GrowthGain\ points of annual growth in its limit and costs lenders $\SlopePerPoint$ points of yield per point of share each year. Earned credit
+is a slow engine of growth either way; faster growth has to come from the issuer's lines. We therefore treat the borrower's
+benefit from the reserve as second-order and do not add it to the objective.
+
+% ---------------------------------------------------------------------------------------------
+\section{Numbers}\label{sec:numbers}
+
+\subsection{Lenders' risk of losing principal}
+
+Table~\ref{tab:safety} reports, for the inputs of Table~\ref{tab:inputs} and 200,000 simulated paths, the probability that
+lenders' return is negative in some year of the first ten, with and without a seed. The identity of Lemma~\ref{lem:return}
+holds on every path to within $\IdentityErr$. At $r=45\%$ the probability is \PTenAtFortyFive\%, against \PTenAtRC\% at $r_c$,
+\PTenAtFifty\% at 50\% and \PTenAtSixtyFive\% at 65\%. The probability does not reach zero at any share, because a
+bad year before the reserve has built up falls on lenders: the early-year protection depends mostly on the seed. A seed of 2\% of
+deposits lowers the probability at 45\% to \PTenAtFortyFiveSeedTwo\%, and a seed of 5\% to \PTenAtFortyFiveSeedFive\%.
+
+\begin{figure}[ht]
+  \centering
+  \input{figures/safety.tex}
+  \caption{Probability that lenders lose principal in some year of ten, against the reserve share, by seed capital
+  (200,000 paths).}
+  \label{fig:safety}
+\end{figure}
+
+\begin{table}[ht]
+  \centering\small
+  \caption{Lender safety at the production rate. Columns: reserve share (\%); probability of a negative return in some
+  year of ten (\%) with no seed, a 2\% seed and a 5\% seed; mean annual return over the ten years, no seed (\%);
+  expected reserve after ten years, per unit of deposits (\%).}
+  \label{tab:safety}
+  \begin{tabular}{rrrrrr}
+    \toprule
+    $r$ & no seed & seed 2\% & seed 5\% & mean return & reserve \\
+    \midrule
+    \inputrows{data/table_safety.tex}
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Two features need comment. First, the long-run cost of a share up to $r_c$ is zero, but the ten-year mean return is not: it is
+\MeanRC\% at $r_c$ against \MeanZero\% with no reserve, because the reserve is still filling and its balance, $\ResTenRC\%$ of
+deposits after ten years, belongs to lenders who have not yet earned it. Early lenders pay for a reserve that later lenders enjoy. A seed
+removes that transfer. Second, a mean--variance penalty does not justify a larger share. At $r=45\%$, a penalty with risk-aversion
+coefficient 5, 20 or 100 is \MVPenFive, \MVPenTwenty\ or \MVPenHundred\ basis points of annual return, against \ShareCostFortyFive\ percentage points a year for
+the move from $r_c$ to 45\% (Table~\ref{tab:seed}). Only a criterion tied to the loss of principal gives the share a role.
+
+Table~\ref{tab:rsafe} gives the smallest share that keeps the probability at or below a tolerance $\alpha$. Combined with
+Proposition~\ref{prop:rhat}, the share to choose is $\max\{r_c,\ r_{\mathrm{safe}}\}$.
+
+\begin{table}[ht]
+  \centering\small
+  \caption{Smallest reserve share (\%) with a ten-year probability of losing principal at or below the tolerance;
+  ``--'' where no share up to 70\% suffices. Shares below $r_c$ are free, so the share to choose is the larger of
+  $r_c$ and the entry.}
+  \label{tab:rsafe}
+  \begin{tabular}{rrrr}
+    \toprule
+    tolerance (\%) & no seed & seed 2\% & seed 5\% \\
+    \midrule
+    \inputrows{data/table_rsafe.tex}
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Seed capital against share}
+
+Table~\ref{tab:seed} asks what seed, added at the share $r_c$ that costs lenders nothing, gives the protection of a higher share. A
+share above $r_c$ costs lenders $u\,a\,(r-r_c)$ a year, per unit of deposits, for as long as the pool lives. A seed costs its
+funder a return on the capital committed. Matching the protection of 45\% takes a seed of \SeedEquivFortyFive\% of deposits, which costs
+\SeedCostFortyFive\% a year at a 15\% hurdle against $\ShareCostFortyFive\%$ for the share; matching 55\% takes a seed of
+\SeedEquivFiftyFive\%, which costs \SeedCostFiftyFive\% against $\ShareCostFiftyFive\%$. At the funding rate as the cost of capital the seed is cheaper still. The seed does not
+replace the reserve: it protects against the first years, while the reserve builds, and the model never releases it.
+
+\begin{table}[ht]
+  \centering\small
+  \caption{Seed against share. Columns: the share (\%); its ten-year probability of losing principal (\%, no seed); the
+  seed (\% of deposits) that gives the same probability at $r_c$; the yearly cost to lenders of the share above $r_c$ (\%);
+  the yearly cost of the seed at a cost of capital equal to the funding rate and at 15\% (\%).}
+  \label{tab:seed}
+  \begin{tabular}{rrrrrr}
+    \toprule
+    $r$ & prob. & seed & share cost & seed at $e$ & seed at 15\% \\
+    \midrule
+    \inputrows{data/table_seed.tex}
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Equilibrium}
+
+Tables~\ref{tab:eqcurve} and~\ref{tab:eq} compute the equilibrium for the inputs of Table~\ref{tab:inputs}. Demand has constant elasticity $\eta$ and
+lenders' margins are exponential with mean $\tau$, so that supply saturates as lenders' capacity is used. We
+calibrate demand and lenders' capacity so that the production rate clears the market at $r_c$ with no seed, and report
+volumes relative to that point: the levels are not predictions, only the response to $r$. The first
+scenario has no safety requirement. Up to $r_c$ the share changes nothing, as Proposition~\ref{prop:identity} says; beyond it,
+the equilibrium rate rises to \AFortyFiveYield\% at 45\% and to \ASixtyFiveYield\% at 65\%, and volume falls to
+\VFortyFiveYield\ and \VSixtyFiveYield\ of its level at $r_c$. If the premium is held at \PremBps\ basis points, borrowers can
+still ask for the same volume but lenders fund only \VFixedFortyFiveYield\ of it at 45\%, and nothing from about 60\% (where their
+yield falls below the funding rate); Table~\ref{tab:eqcurve}.
+
+With a safety requirement (tolerance exponential with mean $\bar\alpha=10\%$), more reserve brings in lenders who
+would otherwise stay out, and volume peaks. In the base case the peak is at $\hat r=\RHatBase\%$, where volume is \VMaxBase\ of its
+reference level, and volume stays within 1\% of that peak for shares between \LoNinetyNine\% and \HiNinetyNine\%. At 45\% it is
+\VFortyFiveBase, at 65\% it is \VSixtyFiveBase. Across the safety scenarios of Table~\ref{tab:eq} the peak lies between \RHatMin\% and
+\RHatMax\%, and volume falls steeply above about 55\%: the more elastic demand is, the faster. A seed leaves the peak
+almost where it is and raises volume at every share (Proposition~\ref{prop:rhat}, part~3): at the peak by \SeedGainTwo\% for a seed of 2\% of deposits and by \SeedGainFive\% for a seed of 5\%.
+
+\begin{figure}[ht]
+  \centering
+  \input{figures/equilibrium.tex}
+  \caption{Equilibrium volume (relative to the production volume at $r_c$) and APR against the reserve share; $\eta=1$,
+  $\tau=1\%$, $\bar\alpha=10\%$.}
+  \label{fig:eq}
+\end{figure}
+
+\begin{table}[ht]
+  \centering\small
+  \caption{Equilibrium by reserve share: loan APR (\%), volume relative to the production volume at $r_c$, and the volume
+  lenders fund if the premium is held at \PremBps\ basis points (``fixed''). First, no safety requirement; then a safety
+  requirement with $\bar\alpha=10\%$, no seed.}
+  \label{tab:eqcurve}
+  \begin{tabular}{rrrrrrr}
+    \toprule
+    & \multicolumn{3}{c}{yield only} & \multicolumn{3}{c}{with safety} \\
+    \cmidrule(lr){2-4}\cmidrule(lr){5-7}
+    $r$ & APR & volume & fixed & APR & volume & fixed \\
+    \midrule
+    \inputrows{data/table_eq_curve.tex}
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{table}[ht]
+  \centering\small
+  \caption{The volume-maximising share by scenario. Columns: demand elasticity $\eta$; mean lenders' margin $\tau$ (\%); mean
+  tolerated probability of losing principal $\bar\alpha$ (\%); seed (\% of deposits); volume-maximising share (\%); volume
+  at the maximum; shares within 1\% of the maximum volume (\%); volume at 45\%, 55\% and 65\%. Volumes relative to
+  the production volume at $r_c$ with no seed.}
+  \label{tab:eq}
+  \begin{tabular}{rrrrrrrrrr}
+    \toprule
+    $\eta$ & $\tau$ & $\bar\alpha$ & seed & $\hat r$ & max & within 1\% & 45\% & 55\% & 65\% \\
+    \midrule
+    \inputrows{data/table_equilibrium.tex}
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Other books}
+
+The best share depends on the book's default risk. Table~\ref{tab:robust} repeats the base case for annual default
+probabilities of 3\% and 10\%, with the premiums of 600 and 1,400 basis points that the calibration of
+\citet{pricingreserve2026} gives for them. The share that covers expected loss is 29.6\%, \RC\% and 57.6\%; the volume-maximising
+share is about four to six points above it each time; and the shares within 1\% of the maximum do not overlap: 45\% is on the plateau for
+the 5\% book, above it for the 3\% book, and below it for the 10\% book.
+
+\begin{table}[ht]
+  \centering\small
+  \caption{Three books. Columns: annual default probability (\%); premium (bps); loan rate (\%); expected loss (\%);
+  share that covers expected loss $r_c$ (\%); floor at no margin and $r\le r_c$ (\%); share at which lenders earn only the funding rate
+  at the production rate (\%); volume-maximising share, base case (\%); shares within 1\% of the maximum (\%); volume at
+  45\% and at 65\%, relative to the volume at $r_c$.}
+  \label{tab:robust}
+  \begin{tabular}{rrrrrrrrrrr}
+    \toprule
+    PD & prem. & APR & EL & $r_c$ & floor & $r$ for $e$ & $\hat r$ & within 1\% & 45\% & 65\% \\
+    \midrule
+    \inputrows{data/table_robust.tex}
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{table}[ht]
+  \centering\small
+  \caption{Lenders' return and borrowers' earned credit at the production rate. Columns: reserve share $r$ (\%); lenders' long-run
+  return~\eqref{eq:longrun} (\%); interest net of the reserve share, $u\,a(1-f-r)$ (\%); return above the funding rate (\%);
+  growth rate of a borrower's limit, $r\,a$ (\%); years to double (Proposition~\ref{prop:growth}); dollars of interest per dollar of
+  earned credit, $1/r$.}
+  \label{tab:lender}
+  \begin{tabular}{rrrrrrr}
+    \toprule
+    $r$ & return & net interest & above $e$ & growth & doubling & $1/r$ \\
+    \midrule
+    \inputrows{data/table_lender.tex}
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+% ---------------------------------------------------------------------------------------------
+\section{Limits and extensions}\label{sec:limits}
+
+\begin{enumerate}
+\item \emph{Elasticities and tolerances are scenarios.} The paper has no estimate of the pool's demand elasticity, of lenders'
+  response to yield, or of the distribution of their tolerance for loss. The results that do not depend on them are the identity
+  (Proposition~\ref{prop:identity}), the existence and monotonicity results, the incidence formula as a function of the
+  elasticities, and part 1 of Proposition~\ref{prop:rhat}. The numerical plateau and its position depend on them. The
+  pool's own flows can identify them: deposit inflows against the yield offered, and loan requests against the rate, once the pool has
+  operated through some changes in both.
+\item \emph{No data on default.} The 3, 5 and 10\% books are scenarios. The loss model is a one-factor Gaussian model with
+  independent years, constant exposure, loss given default of 100\% and no seasoning \citep{vasicek2002,pricingreserve2026}.
+\item \emph{Higher rates may raise default.} If an increase of one point in the loan rate raises the annual default probability by $\gamma$
+  points, lenders' long-run yield in the regime $\EL(a)>a\,r$ bends back when $\gamma>(1-f)/\kappa=\GammaBackward$, where $\kappa=\KappaLoss$ is the
+  slope of expected loss in the default probability, and credit is rationed \citep{stiglitz1981}. While the reserve covers
+  losses ($a\,r>\EL(a)$) lenders' yield $u\,a\,(1-f-r)$ is unaffected, but the lock fails once $\kappa\gamma>r$: $\gamma>\GammaProtectFortyFive$ at $r=45\%$ and $\gamma>\GammaProtectSixtyFive$ at 65\%. Neither value has been measured.
+\item \emph{Static, steady-state analysis.} The model compares equilibria. It does not model the path of deposits and loans, entry of
+  competing pools, or the response of other protocols' rates.
+\item \emph{Safety-first with one criterion.} The probability of a negative return in a year of the first ten is one of several
+  reasonable criteria. It ignores the size of the loss and treats a loss of one cent as one of the whole deposit.
+\item \emph{Liquidity assumes staggered maturities and on-time repayment.} Synchronised maturities change the shape of \eqref{eq:wait}
+  but not its bound for a full run; late repayment lengthens it.
+\item \emph{The reserve's cash is idle.} The model leaves the cash that the reserve holds outside the lending base, as the contract does. Lending
+  it would raise interest and risk, and the analysis here does not cover it.
+\item \emph{Synthetic accounts.} Nothing here is evidence about the welfare of borrowers.
+\end{enumerate}
+
+% ---------------------------------------------------------------------------------------------
+\section{Implications for the choice of the share}\label{sec:implications}
+
+The analysis changes how the question is posed, and in this scenario supports six statements.
+\begin{enumerate}
+\item \emph{The best share is a plateau near the share that covers expected loss, not a point.} For the 5\% book it extends from
+  \LoNinetyNine\% to \HiNinetyNine\%, with its peak about four to six points above $r_c$ in each of three books. The share that covers
+  expected loss is itself a function of the book: \RC\% at 5\%, 29.6\% at 3\%, 57.6\% at 10\%.
+\item \emph{Beyond the plateau the cost rises quickly.} Each point above $r_c$ costs lenders $\SlopePerPoint$ points of yield per
+  year; the equilibrium rate must rise, and volume falls by about \VolPerPointFifty\% per point near 50\% in the yield-only scenario (formula~\eqref{eq:incidence}) and faster above. Above $\RMaxLenders\%$
+  lenders earn less than the funding rate at the production rate.
+\item \emph{Seed capital is cheaper protection than share.} It protects the first years, when lenders bear most of the risk
+  and reserve funded by interest has not yet built up.
+\item \emph{The premium and the share move together.} If the share rises and the premium does not, volume falls to what lenders will
+  fund (Table~\ref{tab:eqcurve}, ``fixed''). The incidence formula gives the premium that restores volume.
+\item \emph{The share is a weak lever for growing borrowers' credit.} Dues add a few percent a year to a limit (Table~\ref{tab:lender}).
+\item \emph{The pool is liquid at the scale of one loan term.} A stricter promise to lenders bounds utilisation and raises the rate floor.
+\end{enumerate}
+These are results of the model and its scenarios. The choice of a share in production should also weigh what the model leaves out: the
+protocol's governance, the risk of the issuer's lines, the cost and availability of seed capital, and evidence from the pool itself.
+
+\section{Conclusion}
+
+A reserve share sets a wedge between what borrowers pay and what lenders receive, and a reserve that is never released makes the wedge
+permanent once it exceeds expected loss. We have shown how the wedge divides between the two sides of the market, why a share below
+expected loss is free, why a share a few points above it is worth having when lenders care about losing principal, and why
+a larger share reduces lending. The pool's liquidity follows from the term of its loans. What remains is measurement: the pool's own flows
+can pin down the elasticities on which the position of the plateau depends.
+
+\paragraph{Disclosure of AI authorship} This paper was written by Claude Code, an AI agent made by Anthropic, working with the project's
+human operator, who set the research direction and asked for a demand and equilibrium model of the reserve share. The simulation of lenders'
+returns reuses the loss model of the calibration code written by AI agents working with the project; the equilibrium, safety and liquidity
+computations are this paper's own. All of it is public and reproducible.
+
+{\sloppy\paragraph{Data and code availability} The loss model and its calibration, at commit b725a85, are in
+\texttt{analysis/credit\_risk} of \url{https://github.com/scottonchain/microcredit-contract}. The script that produces every table, curve and
+number of this paper, with the commands to reproduce them, is in \texttt{lending-equilibrium/scripts} of
+\url{https://github.com/scottonchain/microcredit-theory}.\par}
+
+\bibliographystyle{elsarticle-harv}
+\bibliography{references}
+
+\appendix
+\section{Proofs}
+
+\paragraph{Proof of Lemma~\ref{lem:return}}
+If $R_{t-1}+u\,a\,r\ge u\,L_t$, then $R_t=R_{t-1}+u\,a\,r-u\,L_t$ and $\ell_t=0$. Otherwise $R_t=0$ and
+$\ell_t=u\,L_t-R_{t-1}-u\,a\,r$, so again $R_t-R_{t-1}=u\,a\,r-u\,L_t+\ell_t$. Hence
+$Y_t=u\,a(1-f-r)-\ell_t=u\,a(1-f)-u\,L_t-(R_t-R_{t-1})$, and summing gives the identity.
+
+Let $\xi_t=u\,a\,r-u\,L_t$, $S_t=\sum_{s\le t}\xi_s$ and $\mu=u(a\,r-\EL)$. Unrolling the recursion, $R_T=\max\{k+S_T,\ \max_{1\le j\le T}(S_T-S_j)\}$.
+The $\xi_t$ are independent and bounded, so $\sum_t\mathrm{Var}(\xi_t)/t^2<\infty$ and Kolmogorov's strong law gives $S_n/n\to\mu$
+almost surely \citep{billingsley1995}. If $\mu>0$, $\min_jS_j$ is finite, $R_T=S_T+O(1)$ and $R_T/T\to\mu$. If $\mu\le0$, then for any $\epsilon>0$ almost surely $|S_n-n\mu|\le\epsilon n$ for large $n$, so
+$S_T-S_j\le(T-j)\mu+\epsilon(T+j)\le2\epsilon T$ and $0\le R_T\le\max\{k+S_T,2\epsilon T\}$, whence $R_T/T\to0$. In both cases $R_T/T\to\max\{\mu,0\}$. The loss rates also obey the strong law, $T^{-1}\sum L_t\to\EL$. Dividing the identity by $T$,
+$T^{-1}\sum Y_t\to u\,a(1-f)-u\,\EL-\max\{u\,a\,r-u\,\EL,0\}=y(a,r)$. \hfill$\square$
+
+\paragraph{Proof of Proposition~\ref{prop:identity}}
+$y(a,r)=\min\{u[a(1-f)-\EL],\ u\,a\,(1-f-r)\}$ is the minimum of two strictly increasing continuous functions of $a$ (as $r<1-f$), so it is strictly increasing, and its inverse at $e+x$ is the maximum of the two inverses, which is \eqref{eq:floor}. Identity \eqref{eq:identity} is $y=e+x$ rearranged. The first branch of \eqref{eq:floor} does not depend on $r$ and is the larger one exactly when $a_0(x)\,r\le\EL$, that is, for $r\le\bar r(x)$. The second is strictly increasing and convex in $r$, with derivative $(e+x)/(u(1-f-r)^2)=\underline a/(1-f-r)$, and unbounded as $r\to1-f$. \hfill$\square$
+
+\paragraph{Proof of Proposition~\ref{prop:eq}}
+Let $\Phi(a)=y(a,r)-e-\psi(V^d(a))$, with $\Phi=-\infty$ where $V^d(a)\ge\bar V$. The function $y(\cdot,r)$ is continuous and strictly increasing. Since $V^d$ is decreasing and $\psi$ increasing, $\psi(V^d(a))$ is nonincreasing, so $\Phi$ is strictly increasing. At $a=0$, $y=-u\,\EL<e$, so $\Phi<0$. As $a\to\infty$, $y\to\infty$ while $\psi(V^d(a))$ is bounded above by its value at any finite $a$, so $\Phi>0$ for large $a$. By continuity $\Phi$ has a root, unique because $\Phi$ is strictly increasing; at it, $y=e+\psi(V^*)$ with $V^*=V^d(a^*)$, which is \eqref{eq:eqrate} after rearranging as in Proposition~\ref{prop:identity}. For $r'>r$, $y(a,r')\le y(a,r)$, so $\Phi(a^*(r);r')\le0$ and $a^*(r')\ge a^*(r)$; the inequality is strict where $a^*(r)\,r>\EL$ because $y$ then strictly decreases in $r$. Then $V^*=V^d(a^*)$ and $\psi(V^*)$ are nonincreasing. \hfill$\square$
+
+\paragraph{Proof of Proposition~\ref{prop:incidence}}
+In the regime $a\,r>\EL$, $y=u\,a\,(1-f-r)$, so $d\ln y=d\ln a-dr/(1-f-r)$. Along the equilibrium, $d\ln V^s=\varepsilon\,d\ln y$ and $d\ln V^d=-\eta\,d\ln a$ are equal. Hence $(\varepsilon+\eta)\,d\ln a=\varepsilon\,dr/(1-f-r)$, which gives the first formula. Then $d\ln V^*=-\eta\,d\ln a$ and $d\ln y^*=d\ln a-dr/(1-f-r)=-\eta/(\eta+\varepsilon)\cdot dr/(1-f-r)$. \hfill$\square$
+
+\paragraph{Proof of Lemma~\ref{lem:mono}}
+If $\ell_t>0$ then $R_t=0$ and $Y_t=u\,a(1-f)-u\,L_t+R_{t-1}$; if $\ell_t=0$ then $Y_t=u\,a(1-f-r)>0$. So $Y_t<0$ if and only if $u\,L_t>u\,a(1-f)+R_{t-1}$. By induction on \eqref{eq:recursion}, on every path each $R_t$ is nondecreasing in $r$, $k$ and $a$. The right side of the inequality is nondecreasing in all three, so the event shrinks as any of them rises, and so does its probability. \hfill$\square$
+
+\paragraph{Proof of Proposition~\ref{prop:rhat}}
+(1) Equilibrium solves $\Phi(a;r)=\ln V^s(y(a,r),p_H(r,k,a))-\ln V^d(a)=0$. Existence of an equilibrium and its uniqueness follow as in Proposition~\ref{prop:eq}: $\Phi$ is strictly increasing in $a$ (by Lemma~\ref{lem:mono}, $p_H$ falls as $a$ rises, so supply rises), equals $-\infty$ for $y\le e$ and is positive for large $a$. The root $a^*(r)$ is continuous in $r$, so $V^*$ is continuous; and since $(1-f-r)\,a^*\ge e/u$ by \eqref{eq:identity}, $a^*\to\infty$ and $V^*\to0$ as $r\to1-f$, so $V^*$ attains its maximum. Take a maximiser $r_0$. If $a^*(r_0)\,r_0\ge\EL$ we are done. Otherwise let $r_1=\EL/a^*(r_0)>r_0$ and $a=a^*(r_0)$. Then $\max\{\EL,a\,r_1\}=\EL=\max\{\EL,a\,r_0\}$, so the yield is the same, and $p_H(r_1,k,a)\le p_H(r_0,k,a)$ by Lemma~\ref{lem:mono}, so supply at $a$ is no smaller. As supply increases in $a$ (through $y$ and $p_H$) and demand decreases, the equilibrium rate at $r_1$ is no larger, so $V^*(r_1)\ge V^*(r_0)$ and $r_1$ is also a maximiser, with $a^*(r_1)\,r_1\ge\EL$.
+(2) At an interior maximiser $dV^*/dr=0$, hence $da^*/dr=0$, so $\partial\Phi/\partial r=0$: $\partial\ln V^s/\partial r=-s_y\,u\,a+s_p\,\pi_r=0$, using $\partial y/\partial r=-u\,a$ in the regime $a\,r>\EL$, which is \eqref{eq:foc}.
+(3) By Lemma~\ref{lem:mono}, $p_H$ is nonincreasing in $k$, so supply is nondecreasing in $k$ at every $(a,r)$, and the equilibrium rate is nonincreasing and volume nondecreasing. \hfill$\square$
+
+\paragraph{Proof of Proposition~\ref{prop:liquidity}}
+The pool's cash is $(1-u)D+R$ and lenders' claims total $D$. A run of $W\,D$ takes the cash first, leaving $(W-q_0)^+D$ to be paid from repayments. Loans of total $u\,D$ mature uniformly over $T$ days, so repayments arrive at $u\,D/T$ a day, all to the queue. The time to pay $(W-q_0)^+D$ is $T(W-q_0)^+/u$. For $W=1$ this is $T(u-c)/u=T(1-c/u)$. Setting $w(W)\le\bar w$ and solving for $u$ gives \eqref{eq:ubound}. \hfill$\square$
+
+\paragraph{Proof of Proposition~\ref{prop:growth}}
+Interest paid on a drawn limit $\ell+d$ is $a(\ell+d)$ a year, of which the share $r$ is added to $d$. So $\dot d=r\,a\,(\ell+d)$ and $\ell+d=\ell\,e^{r\,a\,t}$. The limit doubles when $r\,a\,t=\ln2$, and one dollar of dues takes $1/r$ dollars of interest. \hfill$\square$
+
+\end{document}

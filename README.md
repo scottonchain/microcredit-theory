@@ -20,6 +20,7 @@ papers instead, so that each paper stays focused.
 | [pricing-and-reserve](pricing-and-reserve/) | Pricing Uncollateralized Microcredit on a Public Blockchain: Short Loans, Re-lending and a Locked First-Loss Reserve | Credit risk | The Journal of Credit Risk | Working paper, complete |
 | [one-hop-liquidity](one-hop-liquidity/) | One Hop or Many: What Solvent Intermediaries Cost a Credit Network | Network science | Network Science | Working paper, complete |
 | [issuer-policy](issuer-policy/) | Credit Lines for Pseudonymous Borrowers: Identity-Gated Bayesian Lending under an On-Chain Issuance Budget | Operational research | European Journal of Operational Research | Working paper, complete |
+| [lending-equilibrium](lending-equilibrium/) | Pricing the Reserve: Market Equilibrium, Lender Safety and Liquidity in an Uncollateralized On-Chain Lending Pool | Financial intermediation | Journal of Financial Intermediation | Working paper, complete |
 
 Each paper is kept current as the protocol and its analysis change. New results start a new
 directory when they answer a different question in a different discipline.

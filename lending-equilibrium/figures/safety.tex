@@ -1,0 +1,20 @@
+% Figure: probability that lenders lose principal in some year of ten, against the reserve share
+% and the seed capital (data/safety_curve.csv).
+\begin{tikzpicture}
+  \begin{axis}[
+      width=0.82\linewidth, height=5.8cm,
+      xmin=0.2, xmax=0.7, ymin=0, ymax=16,
+      xlabel={reserve share $r$}, ylabel={P(principal loss within 10 years) (\%)},
+      tick label style={font=\footnotesize}, label style={font=\small},
+      legend style={font=\scriptsize, draw=none, fill=white, fill opacity=0.85, text opacity=1, at={(0.97,0.97)}, anchor=north east},
+    ]
+    \addplot[thick, red!70!black] table[x=r, y=p_k0, col sep=comma] {data/safety_curve.csv};
+    \addlegendentry{no seed}
+    \addplot[thick, blue!65!black] table[x=r, y=p_k2, col sep=comma] {data/safety_curve.csv};
+    \addlegendentry{seed $2\%$ of deposits}
+    \addplot[thick, green!45!black] table[x=r, y=p_k5, col sep=comma] {data/safety_curve.csv};
+    \addlegendentry{seed $5\%$}
+    \addplot[dotted, gray] coordinates {(0.4176,0) (0.4176,16)};
+    \node[font=\scriptsize, rotate=90, anchor=south] at (axis cs:0.4176,8) {$r_c$};
+  \end{axis}
+\end{tikzpicture}

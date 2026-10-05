@@ -12,3 +12,4 @@
 *.cut
 build.log
 __pycache__/
+*.spl

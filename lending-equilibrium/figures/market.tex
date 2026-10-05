@@ -1,0 +1,20 @@
+% Figure: borrowers' demand and lenders' supply of loans, by reserve share (data/supply_demand.csv).
+\begin{tikzpicture}
+  \begin{axis}[
+      width=0.82\linewidth, height=6.4cm,
+      xmin=0.55, xmax=1.2, ymin=8, ymax=22,
+      xlabel={loan volume (production volume at $r_c$ $=1$)}, ylabel={loan APR (\%)},
+      tick label style={font=\footnotesize}, label style={font=\small},
+      legend style={font=\scriptsize, draw=none, fill=white, fill opacity=0.85, text opacity=1, at={(0.03,0.97)}, anchor=north west},
+    ]
+    \addplot[thick, black] table[x=v, y=demand, col sep=comma] {data/supply_demand.csv};
+    \addlegendentry{borrowers' demand}
+    \addplot[thick, green!45!black] table[x=v, y=s_rc, col sep=comma] {data/supply_demand.csv};
+    \addlegendentry{lenders' supply, $r=41.8\%$}
+    \addplot[thick, blue!65!black] table[x=v, y=s_r50, col sep=comma] {data/supply_demand.csv};
+    \addlegendentry{$r=50\%$}
+    \addplot[thick, red!70!black] table[x=v, y=s_r60, col sep=comma] {data/supply_demand.csv};
+    \addlegendentry{$r=60\%$}
+    \addplot[only marks, mark=*, mark size=1.6pt, black, forget plot] coordinates {(1,12.33)};
+  \end{axis}
+\end{tikzpicture}

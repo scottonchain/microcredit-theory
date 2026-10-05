@@ -1,0 +1,25 @@
+% Figure: equilibrium loan volume and APR against the reserve share (data/equilibrium_curves.csv).
+\begin{tikzpicture}
+  \begin{groupplot}[
+      group style={group size=2 by 1, horizontal sep=1.7cm},
+      width=0.47\linewidth, height=5.4cm,
+      xmin=0.3, xmax=0.7, xlabel={reserve share $r$},
+      tick label style={font=\footnotesize}, label style={font=\small},
+      legend style={font=\scriptsize, draw=none, fill=white, fill opacity=0.85, text opacity=1},
+    ]
+    \nextgroupplot[ylabel={equilibrium volume}, ymin=0.6, ymax=1.1, legend style={at={(0.03,0.03)}, anchor=south west}]
+    \addplot[thick, black, dashed] table[x=r, y=v_yield, col sep=comma] {data/equilibrium_curves.csv};
+    \addlegendentry{yield only}
+    \addplot[thick, red!70!black] table[x=r, y=v_base, col sep=comma] {data/equilibrium_curves.csv};
+    \addlegendentry{with safety, no seed}
+    \addplot[thick, blue!65!black] table[x=r, y=v_base_k2, col sep=comma] {data/equilibrium_curves.csv};
+    \addlegendentry{seed $2\%$}
+    \addplot[thick, green!45!black] table[x=r, y=v_base_k5, col sep=comma] {data/equilibrium_curves.csv};
+    \addlegendentry{seed $5\%$}
+    \nextgroupplot[ylabel={equilibrium APR (\%)}, ymin=11, ymax=18]
+    \addplot[thick, black, dashed] table[x=r, y=a_yield, col sep=comma] {data/equilibrium_curves.csv};
+    \addplot[thick, red!70!black] table[x=r, y=a_base, col sep=comma] {data/equilibrium_curves.csv};
+    \addplot[thick, blue!65!black] table[x=r, y=a_base_k2, col sep=comma] {data/equilibrium_curves.csv};
+    \addplot[thick, green!45!black] table[x=r, y=a_base_k5, col sep=comma] {data/equilibrium_curves.csv};
+  \end{groupplot}
+\end{tikzpicture}
