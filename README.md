@@ -9,7 +9,7 @@ human outcomes.
 
 Each directory holds one paper written for one discipline and one journal, with its LaTeX sources,
 bibliography, figures, the data behind every number, and the compiled PDF. Each directory's
-`JOURNALS.md` names three journals that would accept the paper and lists what belongs in other
+`JOURNALS.md` names three candidate journals for the paper and lists what belongs in other
 papers instead, so that each paper stays focused.
 
 ## Papers
@@ -19,10 +19,9 @@ papers instead, so that each paper stays focused.
 | [conserved-credit](conserved-credit/) | Conserved Credit: Sybil-Proof Loss Bounds for Uncollateralized Lending with Free Identities | Economics and computation | ACM Transactions on Economics and Computation | Working paper, complete |
 | [pricing-and-reserve](pricing-and-reserve/) | Pricing Uncollateralized Microcredit on a Public Blockchain: Short Loans, Re-lending and a Locked First-Loss Reserve | Credit risk | The Journal of Credit Risk | Working paper, complete |
 | [one-hop-liquidity](one-hop-liquidity/) | One Hop or Many: What Solvent Intermediaries Cost a Credit Network | Network science | Network Science | Working paper, complete |
-| [issuer-policy](issuer-policy/) | Credit Lines for Pseudonymous Borrowers: Identity-Gated Bayesian Lending under an On-Chain Issuance Budget | Operational research | European Journal of Operational Research | Working paper, complete |
 
-Each paper is kept current as the protocol and its analysis change. New results start a new
-directory when they answer a different question in a different discipline.
+A further paper will cover the issuer's lending policy (credit scoring), from the contract
+repository's `analysis/issuer_policy`.
 
 ## How to help
 
@@ -32,6 +31,14 @@ We are looking for outside researchers to check, attack and extend this work. Us
 - Find a behaviour of the contract that the model in a paper does not capture.
 - Take on an open problem listed at the end of a paper.
 - Suggest a better venue, or related work we have missed.
+
+The [independent-review coordination issue](https://github.com/scottonchain/microcredit-theory/issues/1)
+links three bounded assignments and a short report template. Reviews proceed through agreed scope,
+original report, author response, revision and an outside recheck by the original reviewer. Claude
+Code owns manuscript responses; Hermes recruits outside reviewers; Codex coordinates review and
+reproduction. A posted invitation is not acceptance, and internal agents are not independent reviewers.
+Unfavorable findings and disagreements remain part of the public record. Candidate venues imply
+neither journal endorsement nor acceptance; no new payment is promised.
 
 Open an issue in this repository and name the paper and the result. Corrections and contributions
 are credited in the paper they improve.
