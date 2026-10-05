@@ -44,7 +44,7 @@ Journal scopes were checked on 2026-10-05 against each journal's own pages:
 | --- | --- | --- |
 | Pricing the risk premium and sizing the first-loss reserve (one-factor model, Basel correlation) | Credit risk | `pricing-and-reserve` |
 | What restricting backing to one hop costs in liquidity, compared with multi-hop credit networks | Network science | `one-hop-liquidity` |
-| How an issuer should turn identity and history into lines (Bayesian policy within a budget) | Credit scoring, statistics | A separate paper from `analysis/issuer_policy` |
+| How an issuer should turn identity and history into lines (Bayesian policy within a budget) | Operational research, credit scoring | `issuer-policy` |
 | Provisioning of overdue loans and runs by lenders | Banking | Not yet a paper |
 | Recovering relayed transactions from nonces | Distributed systems | Not yet a paper |
 | The detection challenge and its calibration corpus | Machine learning evaluation | Not yet a paper |

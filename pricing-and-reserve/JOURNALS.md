@@ -47,7 +47,7 @@ before a submission.
 | Why interest-funded reserve must stay locked: credit earned from dues, farming, Sybil accounts | Economics and computation | `conserved-credit` |
 | Whether unsecured backing lowers default (joint liability) | Development economics | Not yet a paper; needs data |
 | Provisioning of overdue loans and runs by lenders before write-off | Banking | Not yet a paper |
-| How the issuer sets each borrower's line | Credit scoring | A separate paper from `analysis/issuer_policy` |
+| How the issuer sets each borrower's line | Credit scoring | `issuer-policy` |
 | Liquidity of one-hop backing | Network science | `one-hop-liquidity` |
 
 A new result belongs in this paper only if it answers the question above. Anything else starts its

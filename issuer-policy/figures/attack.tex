@@ -1,0 +1,27 @@
+% Figure: attacker profit against identities bought (data/attacker_curves.csv).
+\begin{tikzpicture}
+  \begin{axis}[
+      width=0.72\linewidth, height=5.6cm,
+      xmode=log, log basis x=2, xmin=1, xmax=64,
+      xtick={1,2,4,8,16,32,64}, xticklabels={1,2,4,8,16,32,64},
+      xlabel={identities bought}, ylabel={attacker profit (USDC)},
+      tick label style={font=\footnotesize}, label style={font=\small},
+      legend style={font=\scriptsize, draw=none, at={(0.03,0.03)}, anchor=south west},
+      legend cell align=left,
+      scaled y ticks=false, yticklabel style={/pgf/number format/fixed, /pgf/number format/1000 sep={,}},
+    ]
+    \addplot[thick, green!45!black, mark=*, mark size=1.2pt] table[x=identities, y=basic_ic, col sep=comma] {data/attacker_curves.csv};
+    \addlegendentry{basic, true cost}
+    \addplot[thick, blue!65!black, mark=square*, mark size=1.2pt] table[x=identities, y=standard_ic, col sep=comma] {data/attacker_curves.csv};
+    \addlegendentry{standard, true cost}
+    \addplot[thick, red!70!black, mark=triangle*, mark size=1.4pt] table[x=identities, y=enhanced_ic, col sep=comma] {data/attacker_curves.csv};
+    \addlegendentry{enhanced, true cost}
+    \addplot[thick, dashed, green!45!black, mark=*, mark size=1.2pt] table[x=identities, y=basic_viol, col sep=comma] {data/attacker_curves.csv};
+    \addlegendentry{basic, cost a quarter}
+    \addplot[thick, dashed, blue!65!black, mark=square*, mark size=1.2pt] table[x=identities, y=standard_viol, col sep=comma] {data/attacker_curves.csv};
+    \addlegendentry{standard, cost a quarter}
+    \addplot[thick, dashed, red!70!black, mark=triangle*, mark size=1.4pt] table[x=identities, y=enhanced_viol, col sep=comma] {data/attacker_curves.csv};
+    \addlegendentry{enhanced, cost a quarter}
+    \addplot[dotted, gray, domain=1:64] {0};
+  \end{axis}
+\end{tikzpicture}

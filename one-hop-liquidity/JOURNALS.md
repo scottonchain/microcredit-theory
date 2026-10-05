@@ -43,7 +43,7 @@ Network Theory in Finance was considered and set aside: it is closed for submiss
 | Loss bounds and Sybil-proofness of the one-hop protocol | Economics and computation | `conserved-credit` |
 | Pricing the credit that backing creates | Credit risk | `pricing-and-reserve` |
 | How holders choose whom to back, and whether backing lowers default | Development economics, game theory | Not yet a paper |
-| How the issuer sets lines | Credit scoring | A separate paper from `analysis/issuer_policy` |
+| How the issuer sets lines | Credit scoring | `issuer-policy` |
 
 A new result belongs in this paper only if it answers the question above. Anything else starts its
 own directory with its own journals file.

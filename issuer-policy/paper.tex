@@ -1,0 +1,467 @@
+\documentclass[preprint,11pt,authoryear]{elsarticle}
+
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepackage[margin=1in]{geometry}
+\usepackage[hidelinks]{hyperref}
+\hypersetup{pdftitle={Credit Lines for Pseudonymous Borrowers: Identity-Gated Bayesian Lending under an On-Chain Issuance Budget}, pdfauthor={Claude Code}}
+
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+
+\makeatletter
+\newcommand{\inputrows}[1]{\@@input #1 }
+\makeatother
+
+\input{data/calibration_summary.tex}
+
+\journal{European Journal of Operational Research}
+
+\begin{document}
+
+\begin{frontmatter}
+
+\title{Credit Lines for Pseudonymous Borrowers: Identity-Gated Bayesian Lending under an On-Chain Issuance Budget}
+
+\author{Claude Code\fnref{fn1}}
+\fntext[fn1]{Claude Code is an AI agent made by Anthropic, working with the Microcredit Protocol
+Project; the research was directed by the project's human operator. Sources, data and code:
+\url{https://github.com/scottonchain/microcredit-theory}.}
+\affiliation{organization={Microcredit Protocol Project}, country={International}}
+
+\begin{abstract}
+A lending pool on a public blockchain lends without collateral against credit lines that an issuer
+publishes for pseudonymous accounts. The pool's contract bounds what the issuer can put at risk: a
+budget on the sum of lines, charged on each account's highest line since the line was last unused,
+and a cap on how much one report may add. The issuer must then decide whom to lend to and how much,
+from thin and manipulable evidence. We give a policy that does so in four steps. Only accounts with
+a costly identity are eligible, and a tier's cap never exceeds the cost of a fraudulent identity in
+it, which makes buying identities unprofitable whatever the attacker does. Repayment history enters
+a Beta-Binomial estimate of the probability of default only in proportion to the risk lenders
+actually bore, so every route to evidence that costs nothing earns nothing. Each line maximises
+expected profit under exponential demand, at $\mu\ln(i/p)$. Lines are allocated within the budget
+and the per-report cap by a greedy rule that is optimal because the constraints form a laminar
+matroid, and every report is planned to land even if an adversary releases held budget first. In a
+24-month simulation the contract accepted all 925 reports, predicted default rates matched realised
+ones in every decile, lines grew for low-risk borrowers and shrank for high-risk ones, and attackers
+buying identities lost money in every tier unless identities cost far less than the issuer assumed.
+\end{abstract}
+
+\begin{keyword}
+OR in banking \sep credit scoring \sep Bayesian estimation \sep resource allocation \sep matroids \sep incentive compatibility
+\end{keyword}
+
+\end{frontmatter}
+
+% ---------------------------------------------------------------------------------------------
+\section{Introduction}
+
+Credit scoring decides who receives credit and how much \citep{thomas2017credit}. The operational
+research literature has studied it as classification \citep{lessmann2015benchmarking} and as a
+decision problem in which the lender sets limits to maximise profit
+\citep{crook2007recent}. This paper studies a setting that changes three of the standing
+assumptions. Borrowers are pseudonymous accounts on a public blockchain, so an attacker can create as
+many as it likes \citep{douceur2002sybil}. Their history is public and partly manufacturable: a loan
+repaid within a day pays no interest, and capital returned at the end of a history can be reused
+for the next account. And the lender, here called the issuer, does not lend itself. It publishes
+lines into a pool funded by others, whose contract limits how much the issuer can put at risk.
+
+The pool's contract charges an issuance budget on each account's highest line since the line was
+last unused, releases that budget only when the account has no open loans and no commitments, and
+caps how much one report may raise the total \citep{conservedcredit2026}. Under those rules, the
+lenders' potential loss on the issuer's lines never exceeds the budget, even if the issuer is
+compromised. Within that bound, the issuer still has to be accurate and resistant to manipulation:
+it is a delegated monitor in the sense of \citet{diamond1984delegated}, and its lines are where the
+pool's losses come from.
+
+We give a reference policy for this issuer and analyse its properties. The contributions are:
+\begin{itemize}
+\item \emph{An incentive-compatible eligibility rule} (Proposition~\ref{prop:ic}). A tier's line
+  cap must not exceed the cost of an identity in that tier. Then no number of bought identities,
+  with any history, yields a profit, because the loss an account can cause over its lifetime is at
+  most its highest line plus the dues it paid (Lemma~\ref{lem:lifetime}).
+\item \emph{Evidence weighted by risk borne} (Section~\ref{sec:evidence}). A repayment counts in a
+  Beta-Binomial posterior only in proportion to the unsecured principal, the time at risk and its
+  recency. Every zero-cost route to evidence has weight zero.
+\item \emph{A closed-form line} (Proposition~\ref{prop:line}): with exponential demand, expected
+  profit is concave in the line and maximised at $\mu\ln(i/p)$.
+\item \emph{Optimal allocation within the contract's rules} (Proposition~\ref{prop:greedy} and
+  Lemma~\ref{lem:frontrun}). The feasible raises form a laminar matroid, so a greedy rule is optimal;
+  and the plan respects every rule even when an adversary front-runs it.
+\item \emph{A simulation} of 24 monthly reports with honest borrowers, identity buyers, a farm of
+  recycled histories and an adversary who front-runs every report.
+\end{itemize}
+
+% ---------------------------------------------------------------------------------------------
+\section{The Setting}\label{sec:setting}
+
+\paragraph{The pool} Accounts borrow stablecoins for 30-day terms. An account's own credit is its
+issued line plus the dues it has paid, a share of its interest held in a first-loss reserve; other
+accounts may also back it with credit of their own \citep{conservedcredit2026}. A loan defaults 30
+days after its due date and is then written off.
+
+\paragraph{The issuer's interface} The issuer publishes scores $q(a)\in[0,1]$; the line is
+$\ell(a)=M\,q(a)$ for a maximum line $M$. The contract keeps a held budget $\beta(a)$ per account.
+A report that raises $q(a)$ above $\beta(a)$ raises $\beta(a)$ to it, and a report is rejected if
+it raises $\sum_a\beta(a)$ above a budget $B$ or by more than a per-report cap $\Delta$. Anyone may
+call a release that lowers $\beta(a)$ to $q(a)$, but only while $a$ has no open loans and no backing
+commitments. Scores read as zero if no report arrives within a maximum age, so the issuer sends
+empty reports as heartbeats. Reports carry increasing epochs and at most 500 accounts each.
+
+\paragraph{What the issuer reads} For each account: whether an identity provider has verified it,
+whether it has ever defaulted, its own loans (principal, term, disbursement, repayment and closing
+times) and, per loan, the secured backing it held. From its own registry: the identity behind the
+account and the identity's tier. It never reads who backs whom. A function of the backing graph is
+exactly what Sybil accounts can manipulate \citep{cheng2005sybilproof}.
+
+% ---------------------------------------------------------------------------------------------
+\section{Eligibility and Incentive Compatibility}\label{sec:ic}
+
+An account receives a line only if it holds a verified identity of tier $t$, obtained at a cost
+$k_t$ (the price of a fraudulent identity in that tier, plus any expected penalty), uses the
+identity's one live address, and has no default on any address of the identity. Everything else
+receives zero.
+
+\begin{lemma}[Lifetime loss per account]\label{lem:lifetime}
+For any account $a$ and any sequence of operations, the losses lenders bear that are attributable to
+$a$, namely the credit charged to $a$ as a backer plus the residual of its own defaults, are at most
+$\hat\ell(a)+d(a)$, where $\hat\ell(a)$ is the highest line $a$ has ever held and $d(a)$ its dues.
+\end{lemma}
+
+\begin{proof}
+The per-account invariant of \citet[Lemma~5.1]{conservedcredit2026} states that residual exposure
+plus committed credit plus attributed loss is at most the line plus dues, and each operation of the
+pool preserves it. With the line replaced by its running maximum $\hat\ell(a)$, every step of that
+proof goes through unchanged: borrowing and committing are bounded by granted credit, which is at
+most $\hat\ell(a)+d(a)$ less the credit already charged; a charge lowers commitments by at least
+what it adds to the loss; a default moves the residual from exposure into the loss; and lowering a
+line leaves $\hat\ell(a)$ unchanged. Since the left side of the invariant includes the attributed
+loss, the claim follows.
+\end{proof}
+
+\begin{proposition}[Incentive compatibility]\label{prop:ic}
+Suppose an attacker buys $n_t$ identities in each tier $t$ at cost $k_t$, then follows any strategy,
+possibly also holding a share $s$ of the pool as a lender. Its net profit is at most
+\[
+  \sum_t n_t\bigl(\min\{\mathrm{cap}_t,M\}-k_t\bigr)\;+\;I\bigl(r-1+s(1-f-r)\bigr)\;+\;H,
+\]
+where $I$ is the interest its accounts paid, $r$ and $f$ the reserve and fee shares of interest,
+and $H$ the backing honest accounts committed to it. If $\mathrm{cap}_t\le k_t$ in every tier, the
+first two terms are at most zero.
+\end{proposition}
+
+\begin{proof}
+By Lemma~\ref{lem:lifetime}, each identity yields at most its highest line, which the policy keeps
+at or below $\min\{\mathrm{cap}_t,M\}$, plus its dues $d=rI$ in total. The attacker paid $k_t$ per
+identity and interest $I$, and recovers through its shares at most $s(1-f-r)I$
+\citep[Proposition~7.4]{conservedcredit2026}. The second term is at most $I(r-1+1-f-r)=-fI\le0$.
+Honest backing is the honest backers' own risk, charged to their credit.
+\end{proof}
+
+Under the condition, a profit-seeking attacker gains nothing from any number of identities through
+any history; this is the identity-cost form of the result of \citet{friedman2001cheap} that, with
+cheap pseudonyms, newcomers must pay dues, and it is why identities issued once per person matter
+\citep{borge2017personhood}. An attacker that does not seek profit can still cost lenders up to
+$\sum_tn_t\,\mathrm{cap}_t$, which under the condition is at most what it spent on identities, and
+at any moment at most $MB$ on all of the issuer's lines. Table~\ref{tab:tiers} lists the tiers used
+below; their costs are illustrative inputs, which an issuer must set from the market price of
+identities and revisit.
+
+\begin{table}[ht]
+  \centering\small
+  \caption{Tiers: identity cost, line cap, the prior's strength in trials and its annual PD, a new
+  identity's line, and the line after 24 clean 30-day trials (USDC).}
+  \label{tab:tiers}
+  \begin{tabular}{lrrrrrr}
+    \toprule
+    Tier & Cost $k_t$ & Cap & Prior strength & Prior PD & Starting line & After 24 trials \\
+    \midrule
+    \inputrows{data/table_tiers.tex}
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+% ---------------------------------------------------------------------------------------------
+\section{Evidence and the Probability of Default}\label{sec:evidence}
+
+Each closed loan of the account itself is a fractional Bernoulli trial. A loan repaid on time is a
+good trial with weight
+\[
+  w_{\mathrm{good}}=2^{-\mathrm{age}/h}\cdot\min\Bigl\{1,\frac{\text{principal}-\text{secured}}{P_{\mathrm{ref}}}\Bigr\}\cdot\min\Bigl\{1,\frac{\min\{\text{elapsed},\text{term}\}}{30\ \text{days}}\Bigr\},
+\]
+the product of recency with half-life $h$, unsecured size up to a reference principal
+$P_{\mathrm{ref}}$, and time at risk; and $w_{\mathrm{good}}=0$ if the loan closed within the
+24-hour window in which no interest accrues. A loan repaid after its due date is a bad trial whose
+weight is not discounted for stake, so stake cannot hide lateness. Open loans are not yet evidence,
+and a default ends the identity. Loans of other accounts, including accounts this one backed, are
+never read.
+
+Let $G$ and $B$ be the sums of good and bad weights. With a Beta$(\alpha_t,\beta_t)$ prior on the
+rate $\theta$ of bad cycles, fitted by moments to the tier's population, the posterior is
+Beta$(\alpha_t+B,\beta_t+G)$ \citep{gelman2013bda}. Down-weighting observations by a power of their
+likelihood is the standard way to discount less informative data \citep{ibrahim2000power}. A bad
+cycle is a default with probability $1/(1+c)$, where $c$ is the issuer's ratio of late repayments to
+defaults, so the probability of default per 30-day cycle is $p=\mathbb{E}[\theta]/(1+c)$.
+
+Table~\ref{tab:routes} shows how each weight closes a route to evidence that would otherwise cost
+nothing. Interest-free loans and fully secured loans put nothing at risk, and secured backing can be
+recycled through account after account \citep[Theorem~7.2]{conservedcredit2026}. A guarantor record
+can be manufactured by backing one's own fresh account. Dust loans and very short loans would give
+many trials for almost no interest. With the weights, evidence costs interest at a fixed rate, about
+one unit per full trial at the protocol's loan rate. None of the weights is needed for
+Proposition~\ref{prop:ic}, which rests on the caps alone; they keep the estimate honest, so that lines
+go to accounts lenders have seen repay at risk.
+
+\begin{table}[ht]
+  \centering\small
+  \caption{Routes to evidence, their weights as good and bad trials, and the interest paid per unit
+  of good evidence (USDC; ``none'' when the route yields no good evidence).}
+  \label{tab:routes}
+  \begin{tabular}{p{0.52\linewidth}rrr}
+    \toprule
+    Route & Good & Bad & Interest per good trial \\
+    \midrule
+    \inputrows{data/table_routes.tex}
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+% ---------------------------------------------------------------------------------------------
+\section{The Line}\label{sec:line}
+
+In normal times a borrower draws $\min\{\ell,D\}$ of its line, with $D$ exponential of mean $\mu$.
+Before a default it draws the whole line, with loss given default of 100\%. With $i$ the risk premium
+per 30-day cycle, expected issuer profit per cycle is premium on the expected draw less expected loss.
+
+\begin{proposition}[Profit-maximising line]\label{prop:line}
+$\Pi(\ell)=i\,\mu\bigl(1-e^{-\ell/\mu}\bigr)-p\,\ell$ is strictly concave, and it is maximised at
+\[
+  \ell^*=\mu\ln(i/p)\ \text{ if } p<i,\qquad \ell^*=0\ \text{ otherwise}.
+\]
+\end{proposition}
+
+\begin{proof}
+$\mathbb{E}\min\{\ell,D\}=\int_0^\ell e^{-x/\mu}\,dx=\mu(1-e^{-\ell/\mu})$. The marginal profit
+$\Pi'(\ell)=i\,e^{-\ell/\mu}-p$ is strictly decreasing, positive at zero exactly when $p<i$, and zero
+at $\mu\ln(i/p)$.
+\end{proof}
+
+The marginal unit of line earns the premium only when it is drawn, but adds to the loss at a default,
+when it is always drawn; so lines are rationed below demand, as in models of credit rationing
+\citep{stiglitz1981rationing}. The policy's target is $\min\{\ell^*,\mathrm{cap}_t\}$, and an account
+with an overdue loan gets zero at once.
+
+% ---------------------------------------------------------------------------------------------
+\section{Allocation within the Budget}\label{sec:allocation}
+
+Lowering a line is free and immediate. Raises are split into segments of one unit of line, and the
+segments of account $a$ between its current score $S_a$ and its held budget $H_a$ use only the
+per-report cap, while those above $H_a$ also use new budget. Segment $j$ of account $a$ has marginal
+profit $\Pi_a'(x_j)$, which decreases in $j$ by Proposition~\ref{prop:line}.
+
+\begin{proposition}[Greedy allocation]\label{prop:greedy}
+Taking segments in decreasing order of marginal profit, skipping any that no longer fits the
+per-report cap or the remaining budget, and stopping at non-positive marginal profit, maximises total
+expected profit over all feasible sets of raises.
+\end{proposition}
+
+\begin{proof}
+Every segment uses one unit of the per-report cap, and the segments above held budget also use one
+unit of budget. The feasible sets are those with at most $\Delta$ segments in all and at most the
+remaining budget among the segments above held budget: constraints on a laminar family of sets, so
+they are the independent sets of a laminar matroid. The greedy algorithm finds a maximum-weight
+independent set of any matroid \citep{edmonds1971matroids}. Within an account, segments below held
+budget have larger marginal profit than those above it, and marginal profit decreases along each
+account's segments, so the greedy order takes each account's segments as a prefix, which is what a
+raise to a single new score requires.
+\end{proof}
+
+The problem is a two-constraint fractional knapsack \citep{dantzig1957discrete}. On 200 random
+instances with both constraints binding, the greedy matched the linear-programming optimum computed
+with HiGHS \citep{huangfu2018highs} within $10^{-6}$ relative error.
+
+A plan is computed from the state the issuer reads, but the release can change that state before the
+report lands, and anyone may call it.
+
+\begin{lemma}[Front-running]\label{lem:frontrun}
+Between the issuer's read and its report, only a release can change the provider's state, and it only
+lowers held budget from $H_a$ to $S_a$. For an account in the report with new score $N_a$, a release
+followed by the report changes the held total by $-(H_a-S_a)+\max\{0,N_a-S_a\}\le\max\{0,N_a-H_a\}$,
+and raises the report's increase for that account to at most $\max\{0,N_a-S_a\}$.
+\end{lemma}
+
+\begin{proof}
+If $N_a\le H_a$ the release lowers the held total by $H_a-S_a$ and the report raises it by at most
+$\max\{0,N_a-S_a\}\le H_a-S_a$. If $N_a>H_a$ the change is $N_a-H_a$. The increase counted against the
+per-report cap is measured from the held budget at the time the report lands, which is at least
+$S_a$.
+\end{proof}
+
+The policy therefore plans every report so that it lands in both states, as read and with every
+held budget released: $\sum_a\max\{0,N_a-S_a\}\le\Delta$ per cycle across all batches;
+$\sum_a\beta(a)+\sum_a\max\{0,N_a-H_a\}\le B$; no raise at all when governance has lowered $B$
+below the held total; scores integral in $[0,\min\{\mathrm{cap}_t,M\}]$; at most 500 accounts per
+report; and consecutive epochs. A dry run against both copies of the provider's state stops the cycle
+if either would revert.
+
+% ---------------------------------------------------------------------------------------------
+\section{Simulation}\label{sec:sim}
+
+\paragraph{World} 24 monthly reports, maximum line 100, loan rate 12.33\% (a funding rate of 4.33\%
+and a premium of 800 basis points), reserve share 65\%. Honest verified borrowers are 40\% basic,
+40\% standard and 20\% enhanced, with true annual PDs of 1, 2, 5, 10 or 20\% drawn from their tier's
+population, the population the prior is fitted to. Each cycle they borrow with probability 0.85,
+default with the cycle PD after drawing their whole limit, repay late with twice that probability,
+and otherwise repay an exponential draw of mean 50 on time; a quarter of on-time repayments land
+between the issuer's read and its report. A griefer releases every held budget just before each
+report lands. Identity buyers repay a reference loan on time each month and draw everything at their
+best month. A farm runs the recycled-seed construction on unverified accounts and on one bought
+identity. Draws are seeded per borrower, so runs that differ only in budget or attackers face the
+same borrowers.
+
+\paragraph{The contract's rules} All 925 reports planned in the base run and the budget sweep were
+accepted by an exact port of the provider's contract, each after a front-run release (54 lines
+released in total). The per-report cap and the budget each reached full use in some cycle, and
+unsecured exposure on the issuer's lines peaked at 83\% of held budget plus dues.
+
+\paragraph{Farms} An unverified account that repaid 96 loans and 9,600 units inside the
+interest-free window received a line of 0; a rule granting 25\% of repaid principal would have given
+it 100. The same farm on a bought basic identity received 6.10, exactly the line of a new basic
+identity with no history.
+
+\paragraph{Honest lines} Lines start small and grow with repayment, the progressive lending of
+microfinance \citep{morduch1999promise,armendariz2010}. Month 0 is small because the per-report cap
+rations the first report. After the ramp, lines rise for low-risk borrowers and fall for high-risk
+ones as lateness shows (Table~\ref{tab:lines}, Figure~\ref{fig:lines}).
+
+\begin{table}[ht]
+  \centering\small
+  \caption{Mean line of surviving honest borrowers by true annual PD (USDC; base run of 1,000
+  borrowers, budget of 250 lines, 60 per report) and the share alive at month 23.}
+  \label{tab:lines}
+  \begin{tabular}{rrrrrr}
+    \toprule
+    True PD & Month 0 & Month 6 & Month 12 & Month 23 & Alive at month 23 \\
+    \midrule
+    \inputrows{data/table_lines.tex}
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{figure}[ht]
+  \centering
+  \input{figures/lines.tex}
+  \caption{Mean line of surviving honest borrowers by month and true annual PD.}
+  \label{fig:lines}
+\end{figure}
+
+\paragraph{Calibration} Over \CalCycles{} honest borrower-cycles in three seeds, the mean predicted
+default probability per cycle is \CalPredicted\%, the mean true probability \CalTrue\%, and the
+realised rate \CalRealised\% (\CalDefaults{} defaults; 95\% interval \CalLo{} to \CalHi\%). In every
+decile of the prediction, the mean true probability tracks the prediction within 0.05 percentage
+points, and the prediction lies inside the realised rate's 95\% interval (Figure~\ref{fig:calibration}).
+
+\begin{figure}[ht]
+  \centering
+  \input{figures/calibration.tex}
+  \caption{Realised default rate per cycle with its 95\% interval, against the mean predicted
+  probability, by decile of the prediction. The dashed line is perfect calibration.}
+  \label{fig:calibration}
+\end{figure}
+
+\paragraph{Budget} Table~\ref{tab:budget} varies the budget with 600 honest borrowers. A tight
+budget goes to the best marginal profit, so its loss rate is lowest; as it grows, riskier lines are
+funded until demand rather than the budget binds, near 12,500 units. Loss per exposure-year exceeds
+the line-weighted PD because a defaulter draws its whole line while others draw less. Realised profit
+stays within about 20\% of the model's expectation.
+
+\begin{table}[ht]
+  \centering\small
+  \caption{Issuer outcomes against the budget (USDC; 600 honest borrowers, mean of three seeds).}
+  \label{tab:budget}
+  \footnotesize\setlength{\tabcolsep}{4pt}
+  \begin{tabular}{rrrrrrrr}
+    \toprule
+    & Mean & & Loss per & Loss per & Line-weighted & & Model \\
+    Budget & held & Exposure & exposure-year & budget-year & PD & Profit & profit \\
+    \midrule
+    \inputrows{data/table_budget.tex}
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\paragraph{Attackers} Identity buyers' best strategy is to build history for 22 or 23 months and
+then draw everything. Table~\ref{tab:attack} and Figure~\ref{fig:attack} compare two worlds that differ
+only in the true price of an identity. When caps respect Proposition~\ref{prop:ic}, profit is negative
+and falls linearly with the number of identities. When the issuer has overestimated the price fourfold,
+so that caps are four times the true cost, the same policy yields a positive profit linear in the
+number of identities. The loss on issued lines stays below $n\,\mathrm{cap}_t$ in every case.
+
+\begin{table}[ht]
+  \centering\small
+  \caption{Identity buyers by tier: line at the bust-out month and profit per identity at the true
+  cost and at a quarter of it (USDC), and with 64 identities the loss on issued lines against the
+  bound $64\,\mathrm{cap}_t$.}
+  \label{tab:attack}
+  \begin{tabular}{lrrrrrrr}
+    \toprule
+    Tier & Cost & Cap & Line at bust & Profit, cost $k_t$ & Profit, cost $k_t/4$ & Loss, 64 & Bound \\
+    \midrule
+    \inputrows{data/table_attack.tex}
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{figure}[ht]
+  \centering
+  \input{figures/attack.tex}
+  \caption{Attacker profit against the number of identities bought, at the true identity cost (solid)
+  and when identities cost a quarter of what the issuer assumed (dashed).}
+  \label{fig:attack}
+\end{figure}
+
+% ---------------------------------------------------------------------------------------------
+\section{Limitations}
+
+\begin{itemize}
+\item \emph{Identity cost is an input.} Proposition~\ref{prop:ic} is conditional on $k_t$. If
+  identities become cheaper, or one identity can be used at many lenders, caps must fall with them;
+  Figure~\ref{fig:attack} shows what happens otherwise.
+\item \emph{Thin data.} A live account shows only on-time and late repayments, since defaults end it.
+  After 24 months an active borrower has about 15 trials of evidence against a prior worth 57 to 94,
+  so lines discriminate by tier more than by individual risk. A real issuer adds off-chain data, which
+  this policy admits only through the tier and its prior.
+\item \emph{The prior and the late ratio are assumed right.} The simulation draws honest risk from the
+  population the prior is fitted to and generates lateness with the assumed ratio.
+\item \emph{Exponential demand and full drawdown at default} are modelling choices that give a concave
+  profit and a closed-form line.
+\item \emph{Not modelled:} staleness of scores, the pool's liquidity limits and provisioning, and the
+  oracle infrastructure that carries reports.
+\end{itemize}
+
+\section{Conclusion}
+
+An issuer of credit lines to pseudonymous borrowers can be made safe for lenders by the contract and
+useful to borrowers by its policy. The contract's budget bounds what any issuer can put at risk; the
+policy decides what it does within that bound. Caps no larger than the cost of an identity make
+identity fraud unprofitable, evidence weighted by risk borne makes manufactured history worthless,
+and a greedy allocation over a laminar matroid spends the budget optimally and survives front-running.
+The binding input is the price of an identity, which the issuer must measure rather than assume.
+
+\paragraph{Disclosure of AI authorship} This paper was written by Claude Code, an AI agent made by
+Anthropic, working with the project's human operator, who set the research direction. The policy and
+simulation code were written by AI agents working with the project. All of it is public and
+reproducible.
+
+{\sloppy\paragraph{Data and code availability} The policy, its tests and the simulation, at commit
+b725a85, are in \texttt{analysis/issuer\_policy} of
+\url{https://github.com/scottonchain/microcredit-contract}; the script that extracts every table and
+figure is in \url{https://github.com/scottonchain/microcredit-theory}.\par}
+
+\bibliographystyle{elsarticle-harv}
+\bibliography{references}
+
+\end{document}
