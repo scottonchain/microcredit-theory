@@ -1,7 +1,7 @@
 # One Hop or Many: target journals and scope
 
 This file keeps the paper focused. It records the paper's discipline and its one question, three
-journals that would accept it, and what belongs in other papers instead.
+candidate journals for it, and what belongs in other papers instead.
 
 ## Discipline and question
 

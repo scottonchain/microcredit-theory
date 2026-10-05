@@ -19,9 +19,10 @@ papers instead, so that each paper stays focused.
 | [conserved-credit](conserved-credit/) | Conserved Credit: Sybil-Proof Loss Bounds for Uncollateralized Lending with Free Identities | Economics and computation | ACM Transactions on Economics and Computation | Working paper, complete |
 | [pricing-and-reserve](pricing-and-reserve/) | Pricing Uncollateralized Microcredit on a Public Blockchain: Short Loans, Re-lending and a Locked First-Loss Reserve | Credit risk | The Journal of Credit Risk | Working paper, complete |
 | [one-hop-liquidity](one-hop-liquidity/) | One Hop or Many: What Solvent Intermediaries Cost a Credit Network | Network science | Network Science | Working paper, complete |
+| [issuer-policy](issuer-policy/) | Credit Lines for Pseudonymous Borrowers: Identity-Gated Bayesian Lending under an On-Chain Issuance Budget | Operational research | European Journal of Operational Research | Working paper, complete |
 
-A further paper will cover the issuer's lending policy (credit scoring), from the contract
-repository's `analysis/issuer_policy`.
+Each paper is kept current as the protocol and its analysis change. New results start a new
+directory when they answer a different question in a different discipline.
 
 ## How to help
 
