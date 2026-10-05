@@ -1,0 +1,46 @@
+% Figure: a backing graph, its limits, and the cut around a Sybil set.
+\begin{tikzpicture}[
+    acct/.style={circle, draw, thick, minimum size=9mm, inner sep=0pt, font=\small},
+    syb/.style={circle, draw, minimum size=8mm, inner sep=0pt, font=\small, fill=gray!8},
+    unsec/.style={-{Stealth[length=2.4mm]}, thick, draw=blue!65!black},
+    sec/.style={-{Stealth[length=2.4mm]}, line width=1.4pt, draw=green!40!black},
+    attack/.style={-{Stealth[length=2.4mm]}, thick, draw=red!70!black},
+    rej/.style={-{Stealth[length=2mm]}, dotted, thick, draw=gray!70},
+    lab/.style={font=\scriptsize, fill=white, inner sep=1pt},
+    note/.style={font=\scriptsize, align=center},
+  ]
+  % honest accounts
+  \node[acct] (A) at (0,2.2) {$A$};
+  \node[acct] (B) at (3.2,2.2) {$B$};
+  \node[acct] (C) at (0,0) {$C$};
+  \node[acct] (D) at (3.2,0) {$D$};
+  \node[note, above=0.5mm of A] {$\ell=92$};
+  \node[note, below=0.5mm of A] {$\mathrm{Lim}=42$};
+  \node[note, above=0.5mm of B] {$\ell=25$};
+  \node[note, below=0.5mm of B] {$\mathrm{Lim}=65$};
+  \node[note, below=0.5mm of C] {$s=50$\\$\mathrm{Lim}=0$};
+  \node[note, below=0.5mm of D] {$\ell=0$\\$\mathrm{Lim}=50$};
+  \draw[unsec] (A) -- node[lab, above] {$\upsilon=50$} (B);
+  \draw[sec] (C) -- node[lab, above] {$\sigma=50$} (D);
+
+  % Sybil set
+  \begin{scope}[shift={(7.4,1.1)}]
+    \node[syb] (s1) at (180:1.15) {$x_1$};
+    \node[syb] (s2) at (90:1.15) {$x_2$};
+    \node[syb] (s3) at (0:1.15) {$x_3$};
+    \node[syb] (s4) at (270:1.15) {$x_4$};
+  \end{scope}
+  \draw[rej] (s1) to[bend left=20] (s2);
+  \draw[rej] (s2) to[bend left=20] (s3);
+  \draw[rej] (s3) to[bend left=20] (s4);
+  \draw[rej] (s4) to[bend left=20] (s1);
+  \node[note, text=gray!40!black] at (7.4,1.1) {rejected:\\no free\\credit};
+  \node[draw, dashed, rounded corners=6pt, fit=(s1)(s2)(s3)(s4), inner sep=3.5mm] (S) {};
+  \node[font=\small, anchor=south] at (S.north) {Sybil set $S$, $\ell=d=s=0$};
+  \node[note, anchor=north] at (S.south) {$\sum_{v\in S}\mathrm{Lim}(v)=10$ for any $|S|$};
+
+  % attack edge and cut
+  \draw[attack] (B) -- node[lab, above, pos=0.45] {$\upsilon=10$} (s1);
+  \draw[red!70!black, dashed, thick] (5.05,3.35) .. controls (4.85,1.6) .. (5.05,-0.85);
+  \node[font=\scriptsize, text=red!70!black, anchor=north] at (5.05,-0.85) {cut};
+\end{tikzpicture}

@@ -1,0 +1,14 @@
+# LaTeX build products (the compiled paper.pdf is committed)
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.toc
+*.synctex.gz
+*.xmpdata
+*.cut
+build.log
+__pycache__/

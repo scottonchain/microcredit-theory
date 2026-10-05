@@ -1,0 +1,15 @@
+mutant,description,status,seeds_detecting,seeds,failed_properties,failed_unit_tests
+coverage,Coverage ignored: unsecured backing always counts in full,detected by fuzzing,3,3,invariant_I1_capacityBound invariant_I1b_lostCreditBacksNobody,
+no-burn,A default does not burn the unsecured backers' credit,detected by fuzzing,3,3,invariant_Q_perAccountCreditBudget invariant_creditLedgers,
+no-slash,A default does not slash the secured backers' stake,detected by fuzzing,3,3,invariant_creditLedgers,
+free-ignores-loans,Free credit ignores the backer's own loans,detected by fuzzing,3,3,invariant_Q_perAccountCreditBudget,
+pass-on,Received backing can be passed on,detected by fuzzing,3,3,invariant_I4_sybilsCommitNothingTheyDidNotPay invariant_Q_perAccountCreditBudget,
+commit-unrecorded,Backing with credit does not record the commitment,detected by fuzzing,3,3,invariant_I1_capacityBound invariant_I1b_lostCreditBacksNobody invariant_I2_lossBound invariant_I8_honestLendersPayOnlyForIssuedLines invariant_creditLedgers invariant_handlerHealth,
+cut-in-use,Backing can be cut below what the borrower owes,detected by unit tests,0,3,,testBackerRepayingOneLoanFreesNoMoreThanItPaid testBackingCannotBeCutBelowWhatTheBorrowerOwes
+early-release,Backing is released at a default while the borrower has other open loans,detected by fuzzing,3,3,invariant_I8_honestLendersPayOnlyForIssuedLines invariant_Q_perAccountCreditBudget,
+defaulter-keeps-credit,A defaulted account keeps its granted credit,detected by fuzzing,3,3,invariant_I1b_lostCreditBacksNobody invariant_creditLedgers,
+limit-not-available,"A new loan is checked against the limit, not the unused limit",detected by fuzzing,3,3,invariant_I2_lossBound invariant_I8_honestLendersPayOnlyForIssuedLines invariant_Q_perAccountCreditBudget,
+net-interest-dues,"Dues are credited on interest net of the fee, not the reserve share",detected by fuzzing,3,3,invariant_I3_sybilIndependence invariant_Q_perAccountCreditBudget invariant_creditLedgers,
+release-dues,The owner may release dues from the reserve,detected by unit tests,0,3,,testOnlyCapitalBeyondDuesIsReleased
+unstake-committed,Committed stake can be withdrawn,detected by fuzzing,3,3,invariant_I1_capacityBound invariant_I7_impairment invariant_creditLedgers invariant_poolLedgers,
+self-backing,An account may back itself,detected by unit tests,0,3,,testBackMetaRejectsSelfBackingAndMoreThanTheBackerHas

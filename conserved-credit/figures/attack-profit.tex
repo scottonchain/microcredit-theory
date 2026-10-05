@@ -1,0 +1,31 @@
+% Figure: attacker net profit against the number of accounts (data/attack_profit.csv).
+\begin{tikzpicture}
+  \begin{groupplot}[
+      group style={group size=3 by 1, horizontal sep=1.25cm},
+      width=0.34\linewidth, height=4.4cm,
+      xmode=log, log basis x=2, xmin=1, xmax=64,
+      xtick={1,4,16,64}, xticklabels={1,4,16,64},
+      xlabel={accounts $n$},
+      tick label style={font=\scriptsize}, label style={font=\small}, title style={font=\small},
+      legend style={font=\scriptsize, draw=none, fill=white, fill opacity=0.85, text opacity=1, at={(0.03,0.97)}, anchor=north west},
+      scaled y ticks=false, yticklabel style={/pgf/number format/fixed, /pgf/number format/1000 sep={,}},
+    ]
+    \nextgroupplot[title={(a) ring on withdrawn deposits}, ylabel={net profit (USDC)}]
+    \addplot[thick, mark=*, mark size=1.4pt, red!70!black] table[x=n, y=pagerank_rootring, col sep=comma] {data/attack_profit.csv};
+    \addlegendentry{PageRank}
+    \addplot[thick, mark=square*, mark size=1.4pt, blue!65!black] table[x=n, y=implemented_rootring, col sep=comma] {data/attack_profit.csv};
+    \addlegendentry{this protocol}
+
+    \nextgroupplot[title={(b) recycled seed}]
+    \addplot[thick, mark=*, mark size=1.4pt, orange!80!black] table[x=n, y=rule25_seed, col sep=comma] {data/attack_profit.csv};
+    \addlegendentry{25\% rule}
+    \addplot[thick, mark=square*, mark size=1.4pt, blue!65!black] table[x=n, y=implemented_seed, col sep=comma] {data/attack_profit.csv};
+    \addlegendentry{this protocol}
+
+    \nextgroupplot[title={(c) borrower who also lends}, legend style={at={(0.03,0.03)}, anchor=south west}]
+    \addplot[thick, mark=*, mark size=1.4pt, violet] table[x=n, y=netdues_lender, col sep=comma] {data/attack_profit.csv};
+    \addlegendentry{net-interest dues}
+    \addplot[thick, mark=square*, mark size=1.4pt, blue!65!black] table[x=n, y=implemented_lender, col sep=comma] {data/attack_profit.csv};
+    \addlegendentry{this protocol}
+  \end{groupplot}
+\end{tikzpicture}

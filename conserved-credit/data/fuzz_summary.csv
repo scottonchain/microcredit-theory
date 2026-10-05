@@ -1,0 +1,2 @@
+tests,runs_per_test,depth,calls,stats_lines,max_q_bps,max_loss_bound_bps,loans,defaults,slashing,charging,residual,sybilDefaults,sybilLoans,sybilBacksOk,sybilBacksRejected,impairments
+13,1300,256,4326400,16900,10000,9998,260511,118935,27447,16793,78111,25874,52109,1,2311491,132854

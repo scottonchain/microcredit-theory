@@ -1,0 +1,30 @@
+% Figure: farming a history rule with one recycled seed (Theorem 4).
+\begin{tikzpicture}[
+    acct/.style={circle, draw, thick, minimum size=8mm, inner sep=0pt, font=\small},
+    seed/.style={rectangle, rounded corners=3pt, draw, thick, fill=green!15, font=\small, minimum height=6mm},
+    lbl/.style={font=\scriptsize, align=center},
+    move/.style={-{Stealth[length=2.2mm]}, thick, draw=green!40!black},
+    gain/.style={-{Stealth[length=2.2mm]}, thick, draw=red!70!black},
+  ]
+  \node[seed] (K) at (-2.2,1.6) {seed $K$};
+  \foreach \i/\x in {1/0, 2/2.6, 3/5.2} {
+    \node[acct] (a\i) at (\x,0) {$a_{\i}$};
+    \node[lbl, above=1mm of a\i] {back, borrow,\\repay, cut};
+  }
+  \node[font=\large] (dots) at (7.0,0) {$\cdots$};
+  \node[acct] (an) at (8.6,0) {$a_n$};
+  \node[lbl, above=1mm of an] {back, borrow,\\repay, cut};
+
+  \draw[move] (K) to[bend left=15] (a1.north west);
+  \draw[move] (a1) -- node[lbl, below] {recycle $K$} (a2);
+  \draw[move] (a2) -- node[lbl, below] {recycle $K$} (a3);
+  \draw[move] (a3) -- (dots);
+  \draw[move] (dots) -- (an);
+
+  \foreach \i in {1,2,3,n} {
+    \node[lbl] (c\i) at ($(a\i)+(0,-1.25)$) {credit $\eta(H)$};
+    \draw[gain] (a\i) -- (c\i);
+    \node[lbl, text=red!70!black] at ($(a\i)+(0,-1.95)$) {borrow, default};
+  }
+  \node[font=\small] at (4.3,-2.75) {agent's profit after $n$ accounts: $n\,\bigl(\eta(H)-\pi(H)\bigr)$};
+\end{tikzpicture}
