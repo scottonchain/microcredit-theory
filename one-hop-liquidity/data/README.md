@@ -13,6 +13,9 @@ by hand.
 | `degree_ws.csv`, `degree_sbm_half.csv` | Figure 2: success against mean degree |
 | `borrowable_ws.csv` | Figure 3: probability of drawing at least x |
 | `equivalence_curve.csv` | Figure 4: one-hop success against the share of holders |
+| `steady_replicates.csv`, `table_steady_replicates.tex` | The base point's steady state on three independent graphs (`scripts/steady_replicates.py`) |
+| `equivalence_line.csv`, `table_equivalence_line.tex` | The fixed-cohort equivalence: one-hop success when every line and trust line is scaled together (`scripts/steady_replicates.py`) |
+| `replicates_summary.tex` | Macros for the replication and fixed-cohort figures quoted in the text |
 
 The experiments seed every task from its own parameters, so their outputs are identical on every run
 and for any number of processes.

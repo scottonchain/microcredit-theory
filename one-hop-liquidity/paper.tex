@@ -13,7 +13,7 @@
 \usepgfplotslibrary{groupplots}
 \usepackage{caption}
 \usepackage[hidelinks]{hyperref}
-\hypersetup{pdftitle={One Hop or Many: What Solvent Intermediaries Cost a Credit Network}, pdfauthor={Claude Code}}
+\hypersetup{pdftitle={One Hop or Many: What Self-Liable Intermediaries Cost a Credit Network}, pdfauthor={Claude Code}}
 
 \theoremstyle{plain}
 \newtheorem{proposition}{Proposition}
@@ -24,7 +24,9 @@
 \newcommand{\inputrows}[1]{\@@input #1 }
 \makeatother
 
-\title{One Hop or Many: What Solvent Intermediaries Cost a Credit Network}
+\input{data/replicates_summary.tex}
+
+\title{One Hop or Many: What Self-Liable Intermediaries Cost a Credit Network}
 \author{Claude Code\thanks{Claude Code is an AI agent made by Anthropic, working with the
 Microcredit Protocol Project; the research was directed by the project's human operator. See the
 disclosure at the end of the paper. Sources, data and code:
@@ -42,14 +44,17 @@ charged to an account that chose the borrower. We measure what that restriction 
 social graphs (small-world, preferential-attachment and block-model networks of 1,000 accounts), for
 a single borrower and in the steady state of repeated loans, against two-hop, three-hop and unbounded
 routing and a centralised lender. When credit is spread across the graph, one hop serves 28 to 43\% of
-borrowers without credit in the steady state where multi-hop routing serves 83 to 100\%, two hops
-close 71 to 86\% of the gap, and one hop needs about twice the issued credit to match two hops. We then show where the gain
-comes from. If every intermediary must be able to pay, from its own credit, for what it passes on,
-the maximum flow equals the one-hop value exactly. The multi-hop gain therefore comes entirely from
-letting accounts relay credit they could not pay for: 40 to 62\% of two-hop volume enters the
-borrower through an account without credit, and the default falls on holders who never chose the
-borrower. Against Sybil attacks every regime is bounded by its cut and independent of the number of
-fake accounts, but the same attack edges extract 3.3 to 7 times as much under multi-hop routing.
+borrowers without credit in the steady state where multi-hop routing serves 83 to 100\%, and two hops
+close 71 to 86\% of the gap. When the share of holders is raised, one hop needs about twice the
+issued credit to reach the two-hop success rate among the borrowers who remain; with the borrowers
+and their demand held fixed and every line and trust line scaled together, it does not reach it at
+four times. We then show where the gain comes from. If every intermediary can be charged, on its own
+credit, for what it passes on, the maximum flow equals the one-hop value exactly. The multi-hop gain
+therefore comes entirely from letting accounts relay credit they could not be charged for: 40 to
+62\% of two-hop volume enters the borrower through an account without credit, and the debit falls on
+holders who never chose the borrower. Against Sybil attacks every regime's extraction is independent
+of the number of fake accounts and bounded by the attack edges, but the same attack edges extract
+3.3 to 7 times as much under multi-hop routing.
 \end{abstract}
 
 \medskip
@@ -81,14 +86,15 @@ We make three contributions.
   for one borrower on a fresh network and in the steady state of repeated loans. One hop roughly
   halves the liquidity available to borrowers without credit, and two hops recover most of it when
   credit is spread across the graph.
-\item \emph{An equivalence} (Proposition~\ref{prop:pathliable}). If every account must be able to
-  pay, from its own credit, for all it passes on, the maximum flow into a borrower equals the one-hop
-  value. All of the multi-hop gain comes from relaying credit the relay could not pay for, so it
-  moves liability to accounts that did not choose the borrower. We measure how much.
+\item \emph{An equivalence} (Proposition~\ref{prop:pathliable}). If every account can be charged,
+  on its own credit, for all it passes on, the maximum flow into a borrower equals the one-hop
+  value. All of the multi-hop gain comes from relaying credit the relay could not be charged for, so
+  it moves the debit to accounts that did not choose the borrower. We measure how much.
 \item \emph{Sybil cuts} (Proposition~\ref{prop:sybil}). In every regime, what a set of fabricated
-  accounts can extract equals the regime's cut, whatever their number; but the cut is larger under
-  multi-hop routing, because an attack edge from an account without credit carries the credit of
-  accounts behind it.
+  accounts can extract is independent of their number and bounded by the attack edges; it equals
+  the regime's minimum cut where the regime is an ordinary flow, and the optimum of the
+  length-bounded dual for three hops. The bound is larger under multi-hop routing, because an attack
+  edge from an account without credit carries the credit of accounts behind it.
 \end{itemize}
 
 Section~\ref{sec:model} defines the network and the regimes, Section~\ref{sec:props} proves the two
@@ -146,10 +152,20 @@ one transaction.
 % ---------------------------------------------------------------------------------------------
 \section{Two Propositions}\label{sec:props}
 
-\begin{proposition}[Solvent intermediaries]\label{prop:pathliable}
+\begin{proposition}[Self-liable intermediaries]\label{prop:pathliable}
 In the path-liable regime, the maximum flow into a borrower $b$ equals the one-hop value
 $\sum_{u\in N(b)}\min\{c,\varphi(u)\}$, in every state of the network.
 \end{proposition}
+
+The throughput constraint of the path-liable regime represents one specific liability: an
+intermediary can be charged, on its own credit, for what it passes on. In the protocol that
+charge is a debit to the account's future borrowing capacity, a burned line, and not a cash
+payment to lenders; only staked cash recovers anything at a default
+\citep{conservedcredit2026}. ``Can pay for'' below therefore means ``can be charged on its own
+credit for'', and ``bears the loss'' means that the debit lands on that account. The proposition is
+a statement about which accounts' credit a route can draw on, not a theorem that intermediaries
+with cash reserves eliminate the gains from intermediation; in a network where relays post cash,
+or where social collateral is seizable, the constraint and the conclusion differ.
 
 \begin{proof}
 Every unit reaching $b$ crosses an arc $(u,b)$ with $u\in N(b)$, and the flow on that arc is at most
@@ -169,26 +185,47 @@ For attacks, let an attacker add $m$ accounts with no credit and unlimited trust
 the \emph{Sybil set} $S$, and let $g$ honest accounts each extend a line of $c$ to one of them.
 
 \begin{proposition}[Sybil cuts]\label{prop:sybil}
-In every regime of Definition~\ref{def:regimes} except the centralised one, the maximum flow into
-$S$ equals the minimum cut separating the holders from $S$ in that regime's network. It does not
-depend on $m$ or on the edges inside $S$, and it is at most $g\,c$. Under one-hop it is at most $c$
-times the number of attack edges whose honest endpoint is a holder.
+In every regime of Definition~\ref{def:regimes} except the centralised one, the maximum extraction
+into $S$ does not depend on $m$ or on the edges inside $S$, and it is at most $g\,c$. Under one-hop
+it is at most $c$ times the number of attack edges whose honest endpoint is a holder. Moreover:
+\begin{enumerate}
+\item[(a)] in the one-hop, two-hop, unbounded and path-liable regimes, whose values are ordinary
+  maximum flows, the extraction equals the minimum cut separating the holders from $S$ in that
+  regime's flow network;
+\item[(b)] in the $k$-hop regime with $k\ge3$, whose value is a length-bounded flow, the extraction
+  equals the optimum of the dual of the length-bounded path programme, a fractional length-bounded
+  cut \citep{baier2010}, which can be strictly smaller than any ordinary cut.
+\end{enumerate}
 \end{proposition}
 
 \begin{proof}
 Join every account of $S$ to a super-sink with arcs of unlimited capacity. $S$ contains no supply, so
-any flow into $S$ ends at the first Sybil account it reaches, and arcs inside $S$ carry nothing that
-an arc into the super-sink could not. The value is therefore the maximum flow from the holders to
-the super-sink in a network that does not depend on $S$'s size or internal edges, and by the
-max-flow min-cut theorem \citep{ford1956} it equals the minimum cut. The $g$ attack edges form a
-cut of capacity $g\,c$. Under one-hop, only a holder's own credit can cross an attack edge.
+any path carrying flow into $S$ can be terminated at the first Sybil account it reaches and sent
+to the super-sink from there; the truncated path is no longer and uses no arc inside $S$. Hence
+the value, in every regime, equals that of a network in which $S$ is a single sink and the edges
+inside $S$ are absent, which proves independence of $m$ and of those edges. In that network every
+path from a holder to the sink crosses an attack edge, of which there are $g$ of capacity $c$,
+which gives the bound $g\,c$; under one-hop, only a holder's own credit can cross an attack edge.
+For (a), the regimes named are maximum flows on explicit networks (one-hop and two-hop on layered
+networks, unbounded and path-liable on the node-split network), so the max-flow min-cut theorem
+\citep{ford1956} applies. For (b), the $k$-hop value is the optimum of a linear programme over paths
+of at most $k$ arcs with shared arc capacities across positions, which is not an ordinary flow;
+by linear-programming duality its value equals the optimum of the dual, whose feasible solutions
+are arc lengths under which every path of at most $k$ arcs from a holder to the sink has length at
+least one. Assigning length one to each attack edge and zero elsewhere is dual-feasible, which
+gives $g\,c$ again.
 \end{proof}
 
-The centralised lender has no bound: one Sybil account can draw all free credit. The proposition is
-the credit-network form of the attack-edge bounds of SybilLimit \citep{yu2008sybillimit} and of
-\citet{litos2017trust}. What differs across regimes is the constant: under multi-hop routing an
-attack edge opened by an account without credit is worth up to $c$, and its cost falls on holders
-behind it.
+The distinction in (b) is not a technicality. On a path of five nodes with credit 100 at the first,
+capacity 25 on each arc in each direction and the Sybil account at the last, the ordinary minimum
+cut to the last node is 25, while the three-hop flow and its dual are both 0, because the last node
+is four arcs away. The implementation computes the fractional length-bounded cut separately
+(\texttt{khop\_dual}), and the three-hop column of Table~\ref{tab:sybil} is that dual, not an
+ordinary cut. The centralised lender has no bound: one Sybil account can draw all free credit. The
+proposition is the credit-network form of the attack-edge bounds of SybilLimit
+\citep{yu2008sybillimit} and of \citet{litos2017trust}. What differs across regimes is the constant:
+under multi-hop routing an attack edge opened by an account without credit is worth up to $c$, and
+its cost falls on holders behind it.
 
 % ---------------------------------------------------------------------------------------------
 \section{Experimental Design}\label{sec:design}
@@ -268,6 +305,30 @@ $c$, into capacity.
   \end{tabular}
 \end{table}
 
+The steady-state rates of Table~\ref{tab:steady} come from one graph per family, with standard errors
+from five time batches, which measure within-run variation only. Table~\ref{tab:replicates} repeats
+the base point on three independent Watts--Strogatz graphs with independent holders and request
+sequences: the between-graph standard deviation of the success rate is at most \SteadySdMax, and
+the ratio of the two-hop to the one-hop rate lies between \TwoHopRatioMin\ and \TwoHopRatioMax\
+across the graphs. The fresh-network figures of Table~\ref{tab:fresh} pool 600 borrowers from three
+graphs and should be read as clustered within those graphs; standard errors computed as if the
+borrowers were independent understate the uncertainty between networks.
+
+\begin{table}[ht]
+  \centering\small
+  \caption{Steady state at the base point on three independent Watts--Strogatz graphs (graph 0 is
+  the graph of Table~\ref{tab:steady}): share of requests granted, with the mean and the
+  between-graph standard deviation.}
+  \label{tab:replicates}
+  \begin{tabular}{lrrrrr}
+    \toprule
+    Regime & Graph 0 & Graph 1 & Graph 2 & Mean & SD \\
+    \midrule
+    \inputrows{data/table_steady_replicates.tex}
+    \bottomrule
+  \end{tabular}
+\end{table}
+
 When credit is spread, the second hop is most of the gain: it closes 71 to 86\% of the steady-state
 gap between one hop and unbounded routing, and the third hop closes 93 to 99\%. When credit sits in
 other communities, long paths carry the gain: in the block model with credit in half the blocks, two
@@ -300,11 +361,42 @@ can draw.
 \subsection{The same service from more credit}
 
 In a protocol whose lenders' worst-case loss is the issued credit \citep{conservedcredit2026}, the
-natural price of the one-hop rule is the extra credit it needs for the same service. On the
-Watts--Strogatz base graph we run one hop on a fine grid of $q$ and find the issued credit it needs to
-reach each regime's success at $q=0.2$ (Table~\ref{tab:equivalence}, Figure~\ref{fig:equivalence}).
-In the steady state one hop needs 2.1 times the issued credit to match two hops, 3.1 times to match
-three and 3.8 times to match unbounded routing.
+natural price of the one-hop rule is the extra credit it needs for the same service. Two experiments
+measure it, and they measure different things. The first raises the share of holders $q$ on the
+Watts--Strogatz base graph along a fine grid and finds the share at which one hop's success rate
+equals each regime's at $q=0.2$ (Table~\ref{tab:equivalence}, Figure~\ref{fig:equivalence}). Raising
+$q$ also removes accounts from the borrower population, since holders do not borrow, and the request
+process is rescaled by $(1-q)/(1-q_0)$ so that each remaining borrower asks as often as at the base
+point. The estimand is therefore the issued credit at which one hop serves the remaining non-holder
+population at the same rate, not the same borrowers with the same demand. In the steady state that
+multiple is 2.1 for two hops, 3.1 for three and 3.8 for unbounded routing.
+
+The second experiment (Table~\ref{tab:line}) holds the graph, the holders, the borrowers and the
+request sequence fixed at the base point and scales every holder's line and every trust line
+together, so that a full line keeps backing four neighbours. Scaling the line alone changes nothing
+under one hop, because a neighbour backs at most the trust per edge. With both scaled, one hop's
+success rises from \OneHopAtBase\ at the base point to \OneHopAtDouble\ at twice the credit, where a
+single neighbour can fund a whole request, and to \OneHopAtQuadruple\ at four times, still short of
+the two-hop rate of \TargetTwo\ at the base point. For the same borrowers and the same demand, one
+hop needs more than four times the credit to match two hops, so the holder-share multiple
+understates the price of the one-hop rule for a fixed cohort; the figures in the abstract are the
+holder-share ones and are labelled as such.
+
+\begin{table}[ht]
+  \centering\small
+  \caption{Fixed-cohort equivalence: one-hop steady-state success at the base point when every
+  holder's line $L$ and the trust per edge $c$ are scaled together, on the same graph with the same
+  holders, borrowers and requests. The two-hop, three-hop and unbounded rates at the base point are
+  \TargetTwo, \TargetThree\ and \TargetUnb.}
+  \label{tab:line}
+  \begin{tabular}{rrrr}
+    \toprule
+    Multiple & $L$ & $c$ & One-hop success \\
+    \midrule
+    \inputrows{data/table_equivalence_line.tex}
+    \bottomrule
+  \end{tabular}
+\end{table}
 
 \begin{table}[ht]
   \centering\small
@@ -404,7 +496,9 @@ backing is committed in advance. Holders have equal lines and do not borrow. Bor
 amount and take all or nothing. The steady state has no defaults, since a default destroys capacity
 for good; who bears a default is measured from the routes of granted loans. The routing policy is one
 reasonable choice among several. The pool's cash, interest and the protocol's cap of 32 backers per
-borrower are not modelled.
+borrower are not modelled. The sweeps of Tables~\ref{tab:fresh} to~\ref{tab:liability} use one graph
+per setting; the between-graph variation is measured at the base point only
+(Table~\ref{tab:replicates}).
 
 \paragraph{Open questions.} Which routing rules with opt-in relaying maximise liquidity subject to a
 bound on the credit charged to accounts that did not opt in? And how do holders choose whom to back
@@ -413,10 +507,11 @@ when their credit is at stake, which this paper takes as given?
 \section{Conclusion}
 
 Restricting a credit network to one hop costs about half of the liquidity available to borrowers
-without credit, or two to four times the issued credit for the same service. The restriction is
-exactly the requirement that every intermediary be able to pay for what it passes on, so the cost is
-the price of keeping liability with the accounts that chose the borrower. Two-hop routing with opt-in
-relaying is the natural middle ground.
+without credit, or, for the same success rate, two to four times the issued credit when the share of
+holders is raised and more than four times when the borrowers and their demand are held fixed. The
+restriction is exactly the requirement that every intermediary be chargeable, on its own credit, for
+what it passes on, so the cost is the price of keeping the debit with the accounts that chose the
+borrower. Two-hop routing with opt-in relaying is the natural middle ground.
 
 \paragraph{Disclosure of AI authorship.} This paper was written by Claude Code, an AI agent made by
 Anthropic, working with the project's human operator, who set the research direction. The simulation
