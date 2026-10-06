@@ -42,8 +42,9 @@
 \authorsaddresses{}
 
 \begin{abstract}
-The lending protocols deployed on public blockchains require collateral worth more than the loan,
-because accounts cost nothing to create and a protocol cannot tell one person from many. We study a lending
+The widely used lending protocols on public blockchains, Compound and Aave among them, require
+collateral worth more than the loan, because accounts cost nothing to create and a protocol cannot
+tell one person from many. We study a lending
 pool that never infers creditworthiness from the structure of a trust graph. Every unit of
 borrowing capacity is instead a liability of a named account: a line granted by an accountable
 issuer, dues the account itself has paid into a first-loss reserve, or cash it has staked. An
@@ -81,9 +82,10 @@ executions reached \FuzzMaxI\% of the loss bound.
 % ---------------------------------------------------------------------------------------------
 \section{Introduction}\label{sec:intro}
 
-The lending protocols deployed on public blockchains are overcollateralised. A borrower locks assets
-worth more than the loan, and a smart contract sells them if their value falls
-\citep{leshner2019compound,aave2020}. The requirement follows from the setting. Accounts cost
+The widely used lending protocols on public blockchains, Compound and Aave among them, are
+overcollateralised: a borrower locks assets worth more than the loan, and a smart contract sells
+them if their value falls \citep{leshner2019compound,aave2020}. The requirement follows from the
+setting. Accounts cost
 nothing to create and carry no identity, so a protocol that extended unsecured credit to one account
 would extend it to every account an attacker can create \citep{douceur2002sybil}. On-chain credit
 is therefore available only to those who already hold assets. It is unavailable to borrowers
@@ -428,9 +430,18 @@ integer-arithmetic forms are therefore
 \]
 in USDC, where $\Phi_L$ is the forgiven principal that fell on lenders, and the same terms attach to
 Corollary~\ref{cor:cut} and Theorem~\ref{thm:changing}. The campaign of Section~\ref{sec:fuzz} has
-$E$ at most 32 times its \FuzzDefaults{} defaults and $C$ at most its \FuzzLoans{} loans; its harness
-does not use these bounds but tracks the exact rounding loss of every charge and the exact forgiven
-amount of every closure, and asserts the inequalities with those terms.
+$E$ at most 32 times its \FuzzDefaults{} defaults and $C$ at most its \FuzzLoans{} loans. Its harness
+does not use these bounds. It records, at every default, the exact remainder that the rounded
+pro-rata charges leave uncharged (the quantity the term $E\cdot10^{-6}$ bounds) and asserts the first
+inequality with that exact remainder in place of $E\cdot10^{-6}$ (property I2 of
+Table~\ref{tab:coverage}). For the second it asserts
+$\Lambda_L+\max\{0,U-R\}\le\sum_a\ell(a)+\text{(reserve released to lenders)}+\text{(forgiven balances the
+reserve absorbed)}+\text{(that remainder)}$ (property I8): the forgiven principal that fell on
+lenders, $\Phi_L$, is not on its left-hand side and the term $C\cdot10^{-2}$ is not asserted; the
+total forgiven principal is tracked exactly and enters only the cash ledger identity
+(\texttt{invariant\_poolLedgers}), which balances deposits against cash, principal lent, payouts,
+loss before the reserve and forgiven principal. Asserting the bound on $\Phi_L$ as stated is part
+of the harness extension of Section~\ref{sec:validation}.
 \end{remark}
 
 % ---------------------------------------------------------------------------------------------
