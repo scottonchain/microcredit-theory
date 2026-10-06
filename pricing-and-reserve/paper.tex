@@ -59,12 +59,14 @@ For the reserve, we prove that lenders' cumulative return equals gross interest 
 the reserve's final balance. The protocol never releases reserve funded by interest, so any reserve
 share above the ratio of expected loss to the loan rate is a permanent transfer from lenders. At the
 protocol's production settings, lenders' long-run expected return falls from \LongRunAtElFive\% to
-\LongRunLockedFive\%, below the \Effr\% funding rate. A simulation of a 500-loan pool at the contract's
-own timing confirms the annual recursion behind these numbers from the fifth year on and shows that
-the first year, before the reserve has built, is riskier than it says. A reserve share at or modestly
-above expected loss keeps most of lenders' return, and further protection is cheaper as external
-first-loss capital. The quantiles are conditional on the Gaussian factor: a Student-$t$ factor at the
-same correlation roughly doubles the 99.9\% quantile.
+\LongRunLockedFive\%, below the \Effr\% funding rate. A simulation of pools of 100 to 5,000 loans at
+the contract's own timing, with interest arriving loan by loan, agrees with the annual recursion
+behind these numbers to within a few hundredths of a point in mean return from the fifth year on,
+and shows that the first year, before the reserve has built, is riskier than the recursion says. A
+reserve share at or modestly above expected loss keeps most of lenders' return; whether further
+protection is cheaper as external first-loss capital depends on the horizon and the hurdle rate,
+which the companion paper examines. The quantiles are conditional on the Gaussian factor: a
+Student-$t$ factor at the same correlation roughly doubles the 99.9\% quantile.
 \end{abstract}
 
 \medskip
@@ -113,10 +115,12 @@ The contributions are the following.
   every year, for good.
 \item \emph{An event-timed check} (Section~\ref{sec:event}). A simulation of pools of 100 to 5,000
   loans at the contract's own timing, with interest arriving loan by loan and write-offs one late
-  period after default, confirms the annual recursion behind the reserve results from the fifth year
-  on, shows that the first year is riskier than the recursion says, and bounds the error of the
-  premium's combined re-lending and granularity approximation at a few percent, on the conservative
-  side.
+  period after default, agrees with the annual recursion behind the reserve results to within a few
+  hundredths of a point in mean return from the fifth year on, shows that the first year is riskier
+  than the recursion says, and finds the premium's combined re-lending and granularity approximation
+  a few percent above the simulated 99.9\% loss quantile at the three sizes tested, on the
+  conservative side. It is a check of a specified replenished model at three sizes, not an error
+  bound over parameters.
 \end{itemize}
 The market equilibrium of the loan rate and the reserve share, when lenders and borrowers respond to
 them, is the subject of a companion paper \citep{lendingequilibrium2026}, which restates
@@ -548,9 +552,10 @@ and lenders' long-run return is that of no reserve. Under the protocol's rule it
 \subsection{The locked reserve}
 
 \begin{theorem}[Long-run return under a lock]\label{thm:longrun}
-Suppose the loss rates $L_t$ are independent across years, take values in $[0,1]$ and have a common
-mean $\EL$, and the reserve is never released. Then lenders' average annual return converges almost
-surely:
+Suppose the loss rates $L_t$ are independent across years, take values in $[0,\bar L]$ for some
+finite $\bar L$ (for the re-lent loss per exposure-year of Proposition~\ref{prop:replenish},
+$\bar L=n$, since a slot can default at most once per loan), and have a common mean $\EL$, and the
+reserve is never released. Then lenders' average annual return converges almost surely:
 \[
   \frac{1}{T}\sum_{t=1}^T\mathrm{APY}_t\;\longrightarrow\;u\bigl[a(1-f)-\max\{\EL,\ a\,r\}\bigr].
 \]
@@ -679,9 +684,13 @@ loan is written off one late period later, when the reserve pays its principal f
 the rest, and only then is the slot re-lent; the systematic factor is fixed for the year, and the
 defaults among the active slots in a term are binomial with the conditional per-loan probability of
 Proposition~\ref{prop:horizon}. Deposits are constant at $N/u$, so exposure is replenished as in the
-recursion, and the write-offs of a term are paid before that term's interest arrives.
-Table~\ref{tab:event} reports \EventPaths\ paths for pools of 100, 500 and 5,000 loans at the two shares
-of Table~\ref{tab:policy}.
+recursion, and the write-offs of a term are paid before that term's interest arrives. Two
+simplifications remain: all loans start and end at term boundaries (the contract's are staggered),
+and the term is $365/12$ days rather than the contract's 30, so that calendar years and terms align;
+there are no partial repayments, impairments or withdrawals. Interest is what the active, repaying
+slots pay, not the recursion's deterministic $u\,a$ a year, so the model differs from the recursion
+in its inflows as well as their timing. Table~\ref{tab:event} reports \EventPaths\ paths for pools of
+100, 500 and 5,000 loans at the two shares of Table~\ref{tab:policy}.
 
 Three things change and one does not. First, the first year is worse than the recursion says: at the
 production share, lenders bear some loss in \EventYearOneLossRec\% of paths with 500 loans and
@@ -701,10 +710,15 @@ replenished one. Table~\ref{tab:eventq} compares the event-timed quantile with t
 combined approximation, the replenished quantile plus the static granularity adjustment: the
 approximation overstates the quantile by \CombinedErrFiveHundred\% at 500 loans and
 \CombinedErrHundred\% at 100, so it errs on the conservative side, by less than the differences between
-correlation assumptions in Table~\ref{tab:rhogrid}. What does not change is the long-run return:
-Theorem~\ref{thm:longrun} is a statement about the final balance, and the event-timed mean return in
-year 30 is \EventYearThirtyRetRec\% against \AnnualYearThirtyRetRec\% at the production share and
-\EventYearThirtyRetEl\% against \AnnualYearThirtyRetEl\% at expected loss.
+correlation assumptions in Table~\ref{tab:rhogrid}. The long-run return moves least: the event-timed
+mean return in year 30 is \EventYearThirtyRetRec\% against \AnnualYearThirtyRetRec\% at the production
+share and \EventYearThirtyRetEl\% against \AnnualYearThirtyRetEl\% at expected loss, the differences
+coming from the interest that late and defaulted slots do not pay. Theorem~\ref{thm:longrun} is stated
+for the recursion's deterministic interest and does not by itself give the limit of this process; a
+limiting statement for it would need the pathwise accounting of Theorem~\ref{thm:identity} with the
+actual interest and loss inflows, which we do not pursue here. The agreement is a Monte Carlo
+comparison at three pool sizes and two shares, under this model's own simplifications, not an error
+bound over parameters.
 
 The check keeps deposits constant. A pool whose deposits fall with losses and withdrawals, so that
 exposure and the reserve's inflow shrink after a bad year, is the remaining difference between the
