@@ -30,10 +30,12 @@ Two evaluation samples, named for what they estimate:
                   draw). Both draws are made by the world before any rule acts, so the panel is
                   the same for every rule and independent of the lending decision. Each rule's
                   prediction is its posterior for that borrower at that month, whether or not it
-                  lent, including months after a default it observed (the posterior then carries
-                  that default as evidence) and months in which it granted no line. This scores
-                  the rule out of its own sample: on the borrowers it declined and the months it
-                  did not lend.
+                  lent, including months in which it granted no line and months after a default
+                  it observed. A default is not evidence under any rule (policy.loan_evidence and
+                  the comparators count repaid loans only, and the contract ends the account), so
+                  after a default the prediction is the prior plus whatever repayment evidence
+                  survives the decay; the panel scores it as it stands. This scores the rule out
+                  of its own sample: on the borrowers it declined and the months it did not lend.
 
 Uncertainty: clusters are borrower paths, identified by (seed, borrower) and pooled across seeds
 (SEEDS x n_honest clusters). Each world draws BOOT resamples of the clusters with replacement; the

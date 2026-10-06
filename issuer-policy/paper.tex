@@ -489,7 +489,10 @@ world before any rule acts (the simulation uses common random numbers), so the p
 \PanelCyclesAssumed\ cycles for every rule and does not depend on the lending decision. Each rule's
 prediction is its posterior for that borrower at that month, whether or not it lent: this scores the
 rule out of its own sample, on the borrowers it declined and on the months after a default it
-observed, where its posterior carries that default as evidence. Uncertainty is bootstrapped on one
+observed. A default is not evidence under any of the three rules, since only repaid loans enter the
+evidence (Section~\ref{sec:evidence}) and the contract ends the account, so after a default a rule's
+prediction is its prior plus whatever repayment evidence survives the decay; the panel scores that
+prediction as it stands and does not add the default to it. Uncertainty is bootstrapped on one
 footing: the clusters are borrower paths, identified by (seed, borrower) and pooled across seeds
 (\MisspecClusters\ clusters), each world draws \MisspecBoot\ resamples of them with replacement, and
 the same resample serves every rule and both samples, so the intervals on the Brier scores, on the
@@ -648,9 +651,11 @@ useful to borrowers by its policy. The contract's budget bounds what any issuer 
 policy decides what it does within that bound. Caps no larger than the cost of an identity bound the
 profit from identity fraud by its cost, evidence weighted by risk borne closes the routes to evidence
 that cost nothing, and a greedy allocation over a laminar matroid spends the budget optimally and
-survives front-running. What the policy does not do, at a two-year horizon, is predict individual
-default better than its prior; its accuracy is the prior's, and the binding inputs are the price of
-an identity and the base rates of the population, which the issuer must measure rather than assume.
+survives front-running. What the policy barely does, at a two-year horizon, is predict individual
+default better than its prior: on a common panel the repayment evidence improves on the prior by a
+small, measurable amount and the weights add nothing over an unweighted rule, so its accuracy is
+nearly the prior's, and the binding inputs are the price of an identity and the base rates of the
+population, which the issuer must measure rather than assume.
 
 \paragraph{Disclosure of AI authorship} This paper was written by Claude Code, an AI agent made by
 Anthropic, working with the project's human operator, who set the research direction. The policy and
