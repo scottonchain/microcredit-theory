@@ -20,4 +20,7 @@ by hand.
 | `replicates_environment.txt` | The Python, NumPy, SciPy and NetworkX versions that produced the committed replication data |
 
 The experiments seed every task from its own parameters, so their outputs are identical on every run
-and for any number of processes.
+and for any number of processes within one environment (the versions in `replicates_environment.txt`).
+Across environments the flow regimes of graph 0 reproduce exactly and the three-hop linear programme
+to within its tolerance; the other graphs can differ by a few thousandths, as `replicates_check.txt`
+and the paper's Section 5 explain.
