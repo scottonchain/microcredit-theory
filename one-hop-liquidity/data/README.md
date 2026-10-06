@@ -13,9 +13,11 @@ by hand.
 | `degree_ws.csv`, `degree_sbm_half.csv` | Figure 2: success against mean degree |
 | `borrowable_ws.csv` | Figure 3: probability of drawing at least x |
 | `equivalence_curve.csv` | Figure 4: one-hop success against the share of holders |
-| `steady_replicates.csv`, `table_steady_replicates.tex` | The base point's steady state on three independent graphs (`scripts/steady_replicates.py`) |
-| `equivalence_line.csv`, `table_equivalence_line.tex` | The fixed-cohort equivalence: one-hop success when every line and trust line is scaled together (`scripts/steady_replicates.py`) |
+| `steady_replicates.csv`, `table_steady_replicates.tex` | The base point's steady state on three independent graphs, with graph 0's difference from the published row (`scripts/steady_replicates.py`) |
+| `replicates_check.txt` | The acceptance check of graph 0 against the published row: exact for the flow regimes, within 0.005 for the three-hop linear programme; a failure stops the script before any other output (`scripts/steady_replicates.py`) |
+| `equivalence_line.csv`, `table_equivalence_line.tex` | The fixed-cohort equivalence: one-hop success when every line is scaled together with the trust per edge, and when the line alone is scaled (`scripts/steady_replicates.py`) |
 | `replicates_summary.tex` | Macros for the replication and fixed-cohort figures quoted in the text |
+| `replicates_environment.txt` | The Python, NumPy, SciPy and NetworkX versions that produced the committed replication data |
 
 The experiments seed every task from its own parameters, so their outputs are identical on every run
 and for any number of processes.

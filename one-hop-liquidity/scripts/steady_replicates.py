@@ -5,20 +5,28 @@ Reuses analysis/liquidity of the contract repository. Two experiments:
 
 1. The steady-state task of run.py at the base point on three independent graphs (run.py uses one
    graph and five time batches), so that the success rates of Table 2 carry a between-network
-   standard deviation. Replicate 0 is run.py's own graph and request sequence and reproduces its
-   numbers exactly; replicates 1 and 2 draw a new graph, new holders and new requests.
+   standard deviation. Replicate 0 is run.py's own graph and request sequence; replicates 1 and 2
+   draw a new graph, new holders and new requests. Replicate 0 is an acceptance check against the
+   published row of results/steady.csv: the flow regimes must match it exactly and the three-hop
+   regime, a linear programme whose choice among routes of equal length can differ between solver
+   versions, to within TOLERANCE_THREE_HOP. The differences are written to
+   data/replicates_check.txt, and a result outside its tolerance stops the script with exit status
+   1 before any other output is written. Replicates 1 and 2 are checked against nothing;
+   differences of the same order between environments are to be expected there too.
 2. A fixed-cohort equivalence: with the graph, the holders, the borrowers and the request process
-   fixed at the base point, every holder's issued line and the trust per edge are scaled together
-   by a multiple (a full line keeps backing four neighbours), and the multiple at which one hop
-   reaches the two-hop, three-hop and unbounded success rates of the base point is reported.
-   Scaling the line alone changes nothing under one hop, because a neighbour backs at most the
-   trust per edge. Table 3 instead raises the holder share, which removes accounts from the
-   borrower population and rescales the request process.
+   fixed at the base point, every holder's issued line is scaled by a multiple, once together with
+   the trust per edge (a full line keeps backing four neighbours) and once alone, and the multiple
+   at which the joint scaling reaches the two-hop, three-hop and unbounded success rates of the
+   base point is reported. Scaling the line alone changes one-hop success very little, because a
+   neighbour backs at most the trust per edge; the small gain comes from the moments at which a
+   holder's concurrent commitments exhaust its free line. Table 3 instead raises the holder share,
+   which removes accounts from the borrower population and rescales the request process.
 
 Usage: python3 scripts/steady_replicates.py <path to microcredit-contract>     (a few minutes)
 
-Writes data/steady_replicates.csv, data/equivalence_line.csv, data/table_steady_replicates.tex,
-data/table_equivalence_line.tex and data/replicates_summary.tex.
+Writes data/replicates_check.txt, data/steady_replicates.csv, data/equivalence_line.csv,
+data/table_steady_replicates.tex, data/table_equivalence_line.tex, data/replicates_summary.tex and
+data/replicates_environment.txt.
 """
 import csv
 import pathlib
@@ -37,6 +45,8 @@ REPLICATES = (0, 1, 2)
 MULTIPLES = (1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0, 3.5, 4.0)
 REGIMES = ("one-hop", "2-hop", "3-hop", "unbounded", "centralised")
 TARGETS = ("2-hop", "3-hop", "unbounded")
+TOLERANCE_THREE_HOP = 5e-3      # the linear programme's route selection varies between solver versions
+TOLERANCE_FLOW = 1e-9           # the flow regimes are exact
 
 
 def steady(s, regime, replicate, request_setting=None, duration=None):
@@ -70,18 +80,26 @@ def main():
     rows = []
     for regime in REGIMES:
         succ = [steady(base, regime, rep) for rep in REPLICATES]
-        # Replicate 0 must reproduce run.py's published row. The flow regimes are exact; the
-        # three-hop regime is a linear programme whose route selection can differ across solver
-        # versions by a few thousandths, so it is checked to a stated tolerance and the difference
-        # is recorded rather than aborting (a reviewer's environment, SciPy 1.17.0 on Python 3.12,
-        # gave 0.9595 against the published 0.9575).
         diff = succ[0] - published[regime]
-        tol = 5e-3 if regime == "3-hop" else 1e-9
-        if abs(diff) > tol:
-            print(f"WARNING: {regime} replicate 0 differs from results/steady.csv by {diff:+.4f} (tolerance {tol})")
         rows.append({"regime": regime, **{f"graph{rep}": succ[i] for i, rep in enumerate(REPLICATES)},
                      "mean": float(np.mean(succ)), "sd": float(np.std(succ, ddof=1)),
                      "published": published[regime], "replicate0_minus_published": diff})
+    # Acceptance check: replicate 0 must reproduce run.py's published row, exactly for the flow
+    # regimes and within TOLERANCE_THREE_HOP for the three-hop linear programme (a reviewer's
+    # environment, SciPy 1.17.0 on Python 3.12, gave 0.9595 against the published 0.9575). The
+    # check's outcome is written first; a failure stops the script before any other output.
+    failures = []
+    with open(OUT / "replicates_check.txt", "w") as fh:
+        for r in rows:
+            tol = TOLERANCE_THREE_HOP if r["regime"] == "3-hop" else TOLERANCE_FLOW
+            ok = abs(r["replicate0_minus_published"]) <= tol
+            fh.write(f"{'PASS' if ok else 'FAIL'} {r['regime']}: graph 0 {r['graph0']:.4f}, published "
+                     f"{r['published']:.4f}, difference {r['replicate0_minus_published']:+.4f}, tolerance {tol:g}\n")
+            if not ok:
+                failures.append(r["regime"])
+        fh.write("RESULT " + ("PASS" if not failures else "FAIL " + ", ".join(failures)) + "\n")
+    if failures:
+        sys.exit(f"replicate 0 is outside tolerance for {', '.join(failures)}; see data/replicates_check.txt")
     with open(OUT / "steady_replicates.csv", "w", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=list(rows[0]))
         w.writeheader()

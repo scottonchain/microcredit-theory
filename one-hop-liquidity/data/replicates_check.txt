@@ -1,0 +1,6 @@
+PASS one-hop: graph 0 0.4060, published 0.4060, difference +0.0000, tolerance 1e-09
+PASS 2-hop: graph 0 0.8280, published 0.8280, difference +0.0000, tolerance 1e-09
+PASS 3-hop: graph 0 0.9575, published 0.9575, difference +0.0000, tolerance 0.005
+PASS unbounded: graph 0 0.9990, published 0.9990, difference +0.0000, tolerance 1e-09
+PASS centralised: graph 0 1.0000, published 1.0000, difference +0.0000, tolerance 1e-09
+RESULT PASS

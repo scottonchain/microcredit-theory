@@ -315,13 +315,14 @@ the ratio of the two-hop to the one-hop rate lies between \TwoHopRatioMin\ and \
 across the graphs. The fresh-network figures of Table~\ref{tab:fresh} pool 600 borrowers from three
 graphs and should be read as clustered within those graphs; standard errors computed as if the
 borrowers were independent understate the uncertainty between networks. Graph 0 is the graph and
-request sequence of Table~\ref{tab:steady}, and the script checks that it reproduces that table's
-rates: exactly for the flow regimes, and to a tolerance of five thousandths for the three-hop
-regime, which is a linear programme whose choice among routes of equal length can differ between
-solver versions by a few thousandths; the difference is recorded in
-\texttt{data/steady\_replicates.csv} rather than aborting the run, and the versions that produced
-the committed data (Python, NumPy, SciPy and NetworkX) in
-\texttt{data/replicates\_environment.txt}.
+request sequence of Table~\ref{tab:steady}, and the script treats it as an acceptance check: its
+rates must match that table's exactly for the flow regimes and to within five thousandths for the
+three-hop regime, which is a linear programme whose choice among routes of equal length can differ
+between solver versions by a few thousandths; the differences and the verdict are written to
+\texttt{data/replicates\_check.txt}, and a rate outside its tolerance stops the script before it
+writes anything else. Graphs 1 and 2 are checked against nothing, and differences of the same order
+between environments are to be expected there too; the versions that produced the committed data
+(Python, NumPy, SciPy and NetworkX) are in \texttt{data/replicates\_environment.txt}.
 
 \begin{table}[ht]
   \centering\small
