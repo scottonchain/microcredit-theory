@@ -8,12 +8,14 @@ computes:
 
   A. the loan-rate identity and the lenders' floor, by reserve share        (Section 4.1)
   B. lenders' long-run return, guaranteed return and earned credit            (Section 4.2)
-  C. lenders' risk of losing principal against reserve share and seed capital (Section 5)
-  D. the market equilibrium: rate, volume and the volume-maximising share     (Section 6)
+  C. lenders' risk of losing principal against reserve share and seed capital, finite pools,
+     and seed capital against share over a common horizon                     (Section 5)
+  D. the market equilibrium: rate, volume and the volume-maximising share, under the long-run
+     participation rule and under a common holding period; plateau sensitivity (Section 6)
   E. liquidity: time to exit and the utilisation a liquidity target allows    (Section 7)
   F. the adverse-selection threshold                                           (Section 8)
 
-Usage: python3 scripts/equilibrium.py <path to microcredit-contract>      (about 4 minutes)
+Usage: python3 scripts/equilibrium.py <path to microcredit-contract>      (about 6 minutes)
 
 Writes data/*.csv (curves), data/*.tex (table rows and the macros of summary.tex). Every draw uses
 a fixed seed, so two runs give byte-identical files.
@@ -207,6 +209,14 @@ def section_b():
     put("GrowthGain", f"{100 * (0.65 - 0.45) * A_REF:.1f}")
     # Slope of lenders' long-run return in the reserve share above R_C: u * a per unit.
     put("SlopePerPoint", pct(U * A_REF / 100))
+    # Growth of earned credit: the exponential is the continuous-payment approximation; with
+    # repayment and redrawing every term, the factor over a year is (1 + r a T/365)^(365/T).
+    m = 365.0 / TERM_DAYS
+    for r, tag in ((0.45, "FortyFive"), (0.65, "SixtyFive")):
+        g = r * A_REF
+        put(f"GrowthCont{tag}", pct(np.exp(g) - 1))
+        put(f"GrowthDisc{tag}", pct((1 + g / m) ** m - 1))
+    put("TermsPerYear", f"{m:.2f}")
 
 
 # ------------------------------------------------------------------------------------------------
@@ -297,7 +307,30 @@ def section_c():
         lines.append(f"{100 * alpha:.0f} & " + " & ".join(cells) + " \\\\")
     write_tex("table_rsafe.tex", lines)
 
-    # Seed against share: the seed that gives, at the free share R_C, the protection of a higher share.
+    # Finite pools: with n loans the realised annual loss rate is a binomial count around the
+    # conditional rate (the base case is the infinitely granular pool).
+    rng = np.random.default_rng(np.random.SeedSequence([SEED, 13]))
+    finite = {}
+    for n_loans in (100, 1000):
+        lmf = rng.binomial(n_loans, np.clip(lm, 0.0, 1.0)) / n_loans
+        finite[n_loans] = {r: p_principal_loss(lmf, r, A_REF, 0.0, H) for r in (R_C, 0.45, 0.55, 0.65)}
+    lines = []
+    for r in (R_C, 0.45, 0.55, 0.65):
+        lines.append(f"{100 * r:.1f} & {pct(finite[100][r], 1)} & {pct(finite[1000][r], 1)} & {pct(p_at(r, 0.0), 1)} \\\\")
+    write_tex("table_finite_pool.tex", lines)
+    put("PTenFortyFivePoolHundred", pct(finite[100][0.45], 1))
+    put("PTenFortyFivePoolThousand", pct(finite[1000][0.45], 1))
+    put("PTenRCPoolHundred", pct(finite[100][R_C], 1))
+
+    # Seed against share: the seed that gives, at the free share R_C, the protection of a higher
+    # share. Costs are compared over the same horizon H: the share costs lenders the difference in
+    # mean return over the first H years (and u a (r - R_C) a year in the long run); the seed is a
+    # gift that its funder never recovers, so its cost is the annuity that repays it at the hurdle
+    # rate over H years.
+    ann = {E: E / (1 - (1 + E) ** (-H)), 0.15: 0.15 / (1 - 1.15 ** (-H))}
+    put("AnnuityAtE", f"{ann[E]:.3f}")
+    put("AnnuityAtFifteen", f"{ann[0.15]:.3f}")
+    mean_rc = float(np.interp(R_C, [x["r"] for x in rows], [x["mean_k0"] for x in rows])) / 100
     lines = []
     for r in (0.45, 0.50, 0.55, 0.60, 0.65):
         target = p_at(r, 0.0)
@@ -308,23 +341,30 @@ def section_c():
                 found = float(k)
                 break
         share_cost = U * A_REF * (r - R_C)            # yearly, per unit of deposits, lenders' yield forgone
-        seed_cost_e = None if found is None else found * E
-        seed_cost_h = None if found is None else found * 0.15
+        mean_r = float(np.interp(r, [x["r"] for x in rows], [x["mean_k0"] for x in rows])) / 100
+        share_cost_ten = mean_rc - mean_r             # yearly over the first H years
+        seed_cost_e = None if found is None else found * ann[E]
+        seed_cost_h = None if found is None else found * ann[0.15]
         lines.append(
             f"{100 * r:.0f} & {pct(target, 1)} & " +
             ("--" if found is None else f"{100 * found:.2f}") + " & " + pct(share_cost) + " & " +
+            pct(share_cost_ten) + " & " +
             ("--" if found is None else pct(seed_cost_e)) + " & " +
             ("--" if found is None else pct(seed_cost_h)) + " \\\\"
         )
-        if abs(r - 0.55) < 1e-9 and found is not None:
-            put("SeedEquivFiftyFive", f"{100 * found:.2f}")
-            put("SeedCostFiftyFive", pct(found * 0.15))
-            put("ShareCostFiftyFive", pct(share_cost))
-        if abs(r - 0.45) < 1e-9 and found is not None:
-            put("SeedEquivFortyFive", f"{100 * found:.2f}")
-            put("SeedCostFortyFive", pct(found * 0.15))
-            put("ShareCostFortyFive", pct(share_cost))
+        tag = {0.45: "FortyFive", 0.55: "FiftyFive"}.get(round(r, 2))
+        if tag and found is not None:
+            put(f"SeedEquiv{tag}", f"{100 * found:.2f}")
+            put(f"SeedCost{tag}", pct(seed_cost_h))
+            put(f"SeedCostE{tag}", pct(seed_cost_e))
+            put(f"ShareCost{tag}", pct(share_cost))
+            put(f"ShareCostTen{tag}", pct(share_cost_ten))
     write_tex("table_seed.tex", lines)
+    # Late repayment (Section 7): cash collected by the end of one term when a fraction of the
+    # book pays late, per unit of deposits.
+    put("LateShare", "10")
+    put("LateCollectedByTerm", f"{1 - U + 0.9 * U:.3f}")
+    put("LateRemaining", f"{0.1 * U:.3f}")
     return lm
 
 
@@ -332,31 +372,42 @@ def section_c():
 # D. The market equilibrium
 # ------------------------------------------------------------------------------------------------
 R_GRID = np.round(np.arange(0.0, 0.7001, 0.0125), 4)
-A_GRID = np.round(A_REF + np.arange(-0.03, 0.1001, 0.005), 4)
+A_GRID = np.round(A_REF + np.arange(-0.03, 0.1501, 0.005), 4)
+R_GRID_FINE = np.round(np.arange(0.0, 0.7001, 0.00625), 5)
+A_GRID_FINE = np.round(A_REF + np.arange(-0.03, 0.1501, 0.0025), 5)
 
 
-def safety_grid(lm, k):
-    return np.array([[p_principal_loss(lm, r, a, k, H) for a in A_GRID] for r in R_GRID])
+def safety_grid(lm, k, years=H, rg=R_GRID, ag=A_GRID):
+    """P(lenders lose principal within `years`) on the (reserve share, APR) grid, seed k."""
+    return np.array([[p_principal_loss(lm, r, a, k, years) for a in ag] for r in rg])
 
 
-def interp_p(grid, r, a):
-    i = min(max(int(np.searchsorted(R_GRID, r)), 1), len(R_GRID) - 1)
-    j = min(max(int(np.searchsorted(A_GRID, a)), 1), len(A_GRID) - 1)
-    wr = (r - R_GRID[i - 1]) / (R_GRID[i] - R_GRID[i - 1])
-    wa = (a - A_GRID[j - 1]) / (A_GRID[j] - A_GRID[j - 1])
+def yield_grid(lm, k, years=H, rg=R_GRID, ag=A_GRID):
+    """Expected average annual return over `years` of a lender who deposits at launch, seed k."""
+    return np.array([[float(lender_paths(lm, r, a, k, years)[0].mean()) for a in ag] for r in rg])
+
+
+def interp_p(grid, r, a, rg=R_GRID, ag=A_GRID):
+    i = min(max(int(np.searchsorted(rg, r)), 1), len(rg) - 1)
+    j = min(max(int(np.searchsorted(ag, a)), 1), len(ag) - 1)
+    wr = (r - rg[i - 1]) / (rg[i] - rg[i - 1])
+    wa = (a - ag[j - 1]) / (ag[j] - ag[j - 1])
     return ((1 - wr) * ((1 - wa) * grid[i - 1, j - 1] + wa * grid[i - 1, j])
             + wr * ((1 - wa) * grid[i, j - 1] + wa * grid[i, j]))
 
 
 class Market:
     """Heterogeneous lenders, constant-elasticity borrowers, calibrated so that the production APR
-    clears the market at the free reserve share R_C with no seed."""
+    clears the market at the free reserve share R_C with no seed.
 
-    def __init__(self, grid0, eta, tau, abar):
+    Lenders' yield is the long-run return (ygrid None: the hybrid rule of the first version) or
+    the expected average return over a common holding period (ygrid from yield_grid)."""
+
+    def __init__(self, grid0, eta, tau, abar, ygrid0=None, rg=R_GRID, ag=A_GRID):
         self.eta, self.tau, self.abar = eta, tau, abar
-        self.grid0 = grid0
-        c_ref = long_run_yield(A_REF, R_C)
-        p_ref = interp_p(grid0, R_C, A_REF)
+        self.rg, self.ag = rg, ag
+        c_ref = self.yld(A_REF, R_C, ygrid0)
+        p_ref = interp_p(grid0, R_C, A_REF, rg, ag)
         self.w_hat = 1.0 / (U * self._share(c_ref, p_ref))   # u * deposits = 1 at the reference
 
     def _share(self, c, p):
@@ -364,23 +415,43 @@ class Market:
         g = 0.0 if x <= 0 else 1.0 - np.exp(-x / self.tau)
         return g * (1.0 if self.abar is None else np.exp(-p / self.abar))
 
-    def supply(self, a, r, grid):
+    def yld(self, a, r, ygrid):
+        return long_run_yield(a, r) if ygrid is None else interp_p(ygrid, r, a, self.rg, self.ag)
+
+    def supply(self, a, r, grid, ygrid=None):
         """Loans that lenders fund at APR a, reserve share r (u times deposits)."""
-        return U * self.w_hat * self._share(long_run_yield(a, r), interp_p(grid, r, a))
+        return U * self.w_hat * self._share(self.yld(a, r, ygrid), interp_p(grid, r, a, self.rg, self.ag))
 
     def demand(self, a):
         return (a / A_REF) ** (-self.eta)
 
-    def solve(self, r, grid):
+    def solve(self, r, grid, ygrid=None):
         def excess(a):
-            return self.supply(a, r, grid) - self.demand(a)
-        lo, hi = float(A_GRID[0]), float(A_GRID[-1])
+            return self.supply(a, r, grid, ygrid) - self.demand(a)
+        lo, hi = float(self.ag[0]), float(self.ag[-1])
         if excess(hi) < 0:
             return float("nan"), float("nan")
         if excess(lo) >= 0:
             return lo, self.demand(lo)
         a = brentq(excess, lo, hi, xtol=1e-10)
         return a, self.demand(a)
+
+
+def summarise(pts, fine):
+    """Curves and the summary (volume-maximising share, plateau, volumes) of one scenario."""
+    a_s = np.array([p[0] for p in pts])
+    v_s = np.array([p[1] for p in pts])
+    ok = ~np.isnan(v_s)
+    best = int(np.nanargmax(v_s))
+    vmax = float(v_s[best])
+    near = fine[ok & (v_s >= 0.99 * vmax)]
+    at = lambda r: float(v_s[int(np.argmin(np.abs(fine - r)))])  # noqa: E731
+    return a_s, v_s, {
+        "rhat": float(fine[best]), "vmax": vmax, "lo99": float(near.min()), "hi99": float(near.max()),
+        "v0": at(0.0), "vrc": at(R_C), "v45": at(0.45), "v50": at(0.50), "v55": at(0.55), "v65": at(0.65),
+        "a45": float(a_s[int(np.argmin(np.abs(fine - 0.45)))]),
+        "a65": float(a_s[int(np.argmin(np.abs(fine - 0.65)))]),
+    }
 
 
 def section_d(lm_safe):
@@ -405,21 +476,9 @@ def section_d(lm_safe):
     for name, eta, tau, abar, k in scenarios:
         mk = Market(grids[0.0], eta, tau, abar)
         pts = [mk.solve(r, grids[k]) for r in fine]
-        a_s = np.array([p[0] for p in pts])
-        v_s = np.array([p[1] for p in pts])
+        a_s, v_s, s = summarise(pts, fine)
         curves[name] = (a_s, v_s)
-        ok = ~np.isnan(v_s)
-        best = int(np.nanargmax(v_s))
-        vmax = float(v_s[best])
-        near = fine[ok & (v_s >= 0.99 * vmax)]
-        at = lambda r: float(v_s[int(np.argmin(np.abs(fine - r)))])  # noqa: E731
-        summary.append({
-            "name": name, "eta": eta, "tau": tau, "abar": abar, "k": k, "rhat": float(fine[best]),
-            "vmax": vmax, "lo99": float(near.min()), "hi99": float(near.max()),
-            "v45": at(0.45), "v50": at(0.50), "v55": at(0.55), "v65": at(0.65),
-            "a45": float(a_s[int(np.argmin(np.abs(fine - 0.45)))]),
-            "a65": float(a_s[int(np.argmin(np.abs(fine - 0.65)))]),
-        })
+        summary.append({"name": name, "eta": eta, "tau": tau, "abar": abar, "k": k, **s})
     write_csv("equilibrium_curves.csv", [
         {"r": float(r), **{f"a_{n}": 100 * float(curves[n][0][i]) for n in curves},
          **{f"v_{n}": float(curves[n][1][i]) for n in curves}}
@@ -484,6 +543,91 @@ def section_d(lm_safe):
     put("RHatAbarTwenty", f"{100 * by['abar20']['rhat']:.1f}")
     put("LoNinetyNine", f"{100 * b['lo99']:.1f}")
     put("HiNinetyNine", f"{100 * b['hi99']:.1f}")
+
+    # Common holding period: lenders evaluate the expected average return over the same H years as
+    # the safety criterion (and over 5 years), starting at launch with the seed as the reserve.
+    pgrids = {10: grids, 5: {0.0: safety_grid(lm, 0.0, 5)}}
+    ygrids = {10: {k: yield_grid(lm, k, 10) for k in (0.0, 0.02)}, 5: {0.0: yield_grid(lm, 0.0, 5)}}
+    horizon_scenarios = [
+        # name, eta, tau, abar, k, years
+        ("h10_yield", 1.0, 0.01, None, 0.0, 10),
+        ("h10", 1.0, 0.01, 0.10, 0.0, 10),
+        ("h10_abar5", 1.0, 0.01, 0.05, 0.0, 10),
+        ("h10_abar20", 1.0, 0.01, 0.20, 0.0, 10),
+        ("h10_eta2", 2.0, 0.01, 0.10, 0.0, 10),
+        ("h10_k2", 1.0, 0.01, 0.10, 0.02, 10),
+        ("h5_yield", 1.0, 0.01, None, 0.0, 5),
+        ("h5", 1.0, 0.01, 0.10, 0.0, 5),
+    ]
+    hsummary = {}
+    hcurves = {}
+    for name, eta, tau, abar, k, yrs in horizon_scenarios:
+        mk = Market(pgrids[yrs][0.0], eta, tau, abar, ygrid0=ygrids[yrs][0.0])
+        pts = [mk.solve(r, pgrids[yrs][k], ygrids[yrs][k]) for r in fine]
+        a_s, v_s, s = summarise(pts, fine)
+        hcurves[name] = (a_s, v_s)
+        hsummary[name] = {"name": name, "eta": eta, "tau": tau, "abar": abar, "k": k, "years": yrs, **s}
+    write_csv("equilibrium_horizon_curves.csv", [
+        {"r": float(r), **{f"a_{n}": 100 * float(hcurves[n][0][i]) for n in hcurves},
+         **{f"v_{n}": float(hcurves[n][1][i]) for n in hcurves}}
+        for i, r in enumerate(fine)
+    ])
+    write_csv("equilibrium_horizon_summary.csv", list(hsummary.values()))
+    lines = []
+    for name in ("h10_yield", "h10", "h10_abar5", "h10_abar20", "h10_eta2", "h10_k2", "h5_yield", "h5"):
+        s = hsummary[name]
+        abar = "$\\infty$" if s["abar"] is None else f"{100 * s['abar']:.0f}"
+        lines.append(
+            f"{s['years']} & {s['eta']:g} & {abar} & {100 * s['k']:.0f} & {100 * s['rhat']:.1f} & {s['vmax']:.3f} & "
+            f"{100 * s['lo99']:.1f}--{100 * s['hi99']:.1f} & {s['v0']:.3f} & {s['v45']:.3f} & {s['v55']:.3f} & {s['v65']:.3f} \\\\"
+        )
+    write_tex("table_equilibrium_horizon.tex", lines)
+    h = hsummary["h10"]
+    put("RHatHTen", f"{100 * h['rhat']:.1f}")
+    put("VMaxHTen", f"{h['vmax']:.3f}")
+    put("LoNinetyNineHTen", f"{100 * h['lo99']:.1f}")
+    put("HiNinetyNineHTen", f"{100 * h['hi99']:.1f}")
+    put("VZeroHTen", f"{h['v0']:.3f}")
+    put("VFortyFiveHTen", f"{h['v45']:.3f}")
+    put("VSixtyFiveHTen", f"{h['v65']:.3f}")
+    put("AFortyFiveHTen", pct(h["a45"]))
+    hy = hsummary["h10_yield"]
+    put("RHatHTenYield", f"{100 * hy['rhat']:.1f}")
+    put("VZeroHTenYield", f"{hy['v0']:.3f}")
+    put("VFortyFiveHTenYield", f"{hy['v45']:.3f}")
+    put("VSixtyFiveHTenYield", f"{hy['v65']:.3f}")
+    put("RHatHFive", f"{100 * hsummary['h5']['rhat']:.1f}")
+    put("LoNinetyNineHFive", f"{100 * hsummary['h5']['lo99']:.1f}")
+    put("HiNinetyNineHFive", f"{100 * hsummary['h5']['hi99']:.1f}")
+    put("RHatHTenKTwo", f"{100 * hsummary['h10_k2']['rhat']:.1f}")
+    hnames = [n for n in hsummary if hsummary[n]["abar"] is not None]
+    put("RHatHMin", f"{100 * min(hsummary[n]['rhat'] for n in hnames):.1f}")
+    put("RHatHMax", f"{100 * max(hsummary[n]['rhat'] for n in hnames):.1f}")
+    # The ten-year yield itself, at the production APR, by share (seed 0): what the build-up costs.
+    put("YTenAtRC", pct(interp_p(ygrids[10][0.0], R_C, A_REF)))
+    put("YTenAtZero", pct(interp_p(ygrids[10][0.0], 0.0, A_REF)))
+    put("YTenAtFortyFive", pct(interp_p(ygrids[10][0.0], 0.45, A_REF)))
+    put("YLongAtRC", pct(long_run_yield(A_REF, R_C)))
+
+    # Sensitivity of the plateau (base scenario, long-run rule) to the simulated paths and to the
+    # grid on which the safety surface is interpolated.
+    grid_b = safety_grid(lm_safe[:, N_GRID:2 * N_GRID], 0.0)
+    grid_f = safety_grid(lm, 0.0, H, R_GRID_FINE, A_GRID_FINE)
+    sens = []
+    lines = []
+    for label, g, rg, ag in (("paths A, grid 1.25/0.5", grids[0.0], R_GRID, A_GRID),
+                             ("paths B, grid 1.25/0.5", grid_b, R_GRID, A_GRID),
+                             ("paths A, grid 0.625/0.25", grid_f, R_GRID_FINE, A_GRID_FINE)):
+        mk = Market(g, 1.0, 0.01, 0.10, rg=rg, ag=ag)
+        _, _, s = summarise([mk.solve(r, g) for r in fine], fine)
+        sens.append(s)
+        lines.append(f"{label} & {100 * s['rhat']:.1f} & {100 * s['lo99']:.1f}--{100 * s['hi99']:.1f} & "
+                     f"{s['vmax']:.3f} & {s['v45']:.3f} & {s['v65']:.3f} \\\\")
+    write_tex("table_plateau_sensitivity.tex", lines)
+    put("RHatSpread", f"{100 * (max(s['rhat'] for s in sens) - min(s['rhat'] for s in sens)):.1f}")
+    put("PlateauLoSpread", f"{100 * (max(s['lo99'] for s in sens) - min(s['lo99'] for s in sens)):.1f}")
+    put("PlateauHiSpread", f"{100 * (max(s['hi99'] for s in sens) - min(s['hi99'] for s in sens)):.1f}")
+    by["h10"] = h
 
     # Incidence check (yield-only): d ln a / d r = eps/(eta+eps) * 1/(1-f-r), eps = supply elasticity.
     mk = Market(grids[0.0], 1.0, 0.01, None)
@@ -587,6 +731,8 @@ def write_key(by):
         "a_free": ((E / U) + EL) / (1 - F), "r_max_lenders": 1 - F - E / (U * A_REF),
         "rhat_base": b["rhat"], "lo99": b["lo99"], "hi99": b["hi99"], "v45_base": b["v45"], "v55_base": b["v55"],
         "v65_base": b["v65"], "v45_yield": y["v45"], "v65_yield": y["v65"],
+        "rhat_h10": by["h10"]["rhat"], "lo99_h10": by["h10"]["lo99"], "hi99_h10": by["h10"]["hi99"],
+        "v45_h10": by["h10"]["v45"], "v65_h10": by["h10"]["v65"],
     }])
 
 

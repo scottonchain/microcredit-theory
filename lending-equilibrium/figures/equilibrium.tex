@@ -16,10 +16,13 @@
     \addlegendentry{seed $2\%$}
     \addplot[thick, green!45!black] table[x=r, y=v_base_k5, col sep=comma] {data/equilibrium_curves.csv};
     \addlegendentry{seed $5\%$}
+    \addplot[thick, red!70!black, dotted] table[x=r, y=v_h10, col sep=comma] {data/equilibrium_horizon_curves.csv};
+    \addlegendentry{ten-year horizon, with safety}
     \nextgroupplot[ylabel={equilibrium APR (\%)}, ymin=11, ymax=18]
     \addplot[thick, black, dashed] table[x=r, y=a_yield, col sep=comma] {data/equilibrium_curves.csv};
     \addplot[thick, red!70!black] table[x=r, y=a_base, col sep=comma] {data/equilibrium_curves.csv};
     \addplot[thick, blue!65!black] table[x=r, y=a_base_k2, col sep=comma] {data/equilibrium_curves.csv};
     \addplot[thick, green!45!black] table[x=r, y=a_base_k5, col sep=comma] {data/equilibrium_curves.csv};
+    \addplot[thick, red!70!black, dotted] table[x=r, y=a_h10, col sep=comma] {data/equilibrium_horizon_curves.csv};
   \end{groupplot}
 \end{tikzpicture}

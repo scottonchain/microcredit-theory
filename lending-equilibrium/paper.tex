@@ -48,12 +48,18 @@ larger of expected loss and the reserve's share of the rate. We prove that the e
 and is unique; that the share is free to lenders in the long run up to the share that covers
 expected loss and costs them one for one beyond it; and that the cost is divided between borrowers
 and lenders by the elasticities of demand and supply, as in tax incidence. When lenders also care
-about the chance of losing principal, a volume-maximising share exists that is never below the share
-that covers expected loss, and a first-order condition characterises it. For a book with a 5\%
-annual default probability and an 800 basis point premium, loan volume stays within 1\% of its
-maximum for shares of \LoNinetyNine\ to \HiNinetyNine\%, a seed of outside capital of 1\% of deposits
-buys the protection of three points of share at less than half the cost, and the pool's own
-structure bounds the time to exit at one loan term. The elasticities are scenarios, not estimates.
+about the chance of losing principal within a horizon, a volume-maximising share exists. Under a
+rule that values yield over the long run it is never below the share that covers expected loss;
+under a rule that values yield and safety over the same holding period, the reserve's build-up is a
+cost to the lenders who fund it, which moves the volume-maximising share down by less than a point
+at a ten-year horizon and by seven points at five years. For a book with a 5\% annual default
+probability and an 800 basis point premium, loan volume stays within 1\% of its maximum for shares
+of \LoNinetyNine\ to \HiNinetyNine\% under the first rule and of \LoNinetyNineHTen\ to
+\HiNinetyNineHTen\% under the second at ten years; a seed of outside capital of 1\% of deposits gives
+the protection of three points of share and, over the same ten years, costs less than the share at
+the funding rate and about the same at a 15\% hurdle; and, when loans repay on time, the pool's own
+structure bounds the time to exit at one loan term. The elasticities and lenders' tolerances are
+scenarios, not estimates, and volume is the objective, not borrowers' welfare.
 \end{abstract}
 
 \begin{keyword}
@@ -99,21 +105,38 @@ and every term is scaled by utilisation and by the share of interest that lender
   borrowers bear the share $\varepsilon/(\eta+\varepsilon)$ of the cost through the rate, with $\eta$
   and $\varepsilon$ the elasticities of demand and supply.
 \item \emph{Lender safety and the volume-maximising share} (Lemma~\ref{lem:mono} and
-  Proposition~\ref{prop:rhat}). If lenders also require a low probability of losing principal, some
-  volume-maximising share is never below the share that covers expected loss, and a seed of outside
-  first-loss capital raises volume at every share.
-\item \emph{Liquidity} (Proposition~\ref{prop:liquidity}). A run on a pool of 30-day loans is paid
-  within one loan term, and the utilisation that meets a target for the time to exit is explicit.
+  Proposition~\ref{prop:rhat}). If lenders also require a low probability of losing principal
+  within a horizon, a volume-maximising share exists, and a seed of outside first-loss capital
+  raises volume at every share. Under the long-run rule, which values yield over an infinite horizon,
+  the volume-maximising share is never below the share that covers expected loss. Under a common
+  holding period, the build-up of the reserve is a cost to the lenders who fund it and the share
+  is traded off from zero (Section~\ref{sec:numbers}).
+\item \emph{Liquidity} (Proposition~\ref{prop:liquidity}). When loans repay on time, a run on a pool
+  of 30-day loans is paid within one loan term, and the utilisation that meets a target for the time
+  to exit is explicit. Late loans add their own delay, which no rate correction captures.
 \item \emph{Earned credit} (Proposition~\ref{prop:growth}). A borrower's credit from dues grows at
   the rate $r\,a$ a year, so the reserve share is a slow engine of borrower growth.
 \end{enumerate}
 In a scenario with a 5\% annual default probability and the production premium of
-\PremBps\ basis points (a loan rate of \ARef\%), the share that covers expected loss is \RC\%,
-loan volume stays within 1\% of its maximum for shares between \LoNinetyNine\% and \HiNinetyNine\%,
-and at 65\% it has fallen to \VSixtyFiveBase\ of its level at $r_c$ in the base case
-(Section~\ref{sec:numbers}). A seed of 1\% of deposits replaces three points of share at less than half the
-cost. The best share moves with the book's default risk: it is about four to six points above the share that
-covers expected loss in each of three books.
+\PremBps\ basis points (a loan rate of \ARef\%), the share that covers expected loss is \RC\%.
+Under the long-run rule, loan volume stays within 1\% of its maximum for shares between
+\LoNinetyNine\% and \HiNinetyNine\%, and at 65\% it has fallen to \VSixtyFiveBase\ of its level at $r_c$
+in the base case; under a common ten-year holding period the plateau is \LoNinetyNineHTen\% to
+\HiNinetyNineHTen\%, and under a five-year one \LoNinetyNineHFive\% to \HiNinetyNineHFive\%
+(Section~\ref{sec:numbers}). The position of the plateau is therefore a property of the participation
+rule and of lenders' horizon as much as of the book, and the paper reports all three. A seed of 1\% of
+deposits gives the protection of three points of share; over the same ten years it costs less than
+the share at the funding rate and about the same at a 15\% hurdle. The plateau moves with the book's
+default risk across three books.
+
+\paragraph{What this paper adds} The long-run return formula and the locked reserve are from
+\citet{pricingreserve2026}, which is the canonical derivation; Lemma~\ref{lem:return} restates it for
+the independent bounded losses that the simulations use, so that the paper is self-contained. The
+research question here is different: the pricing paper takes the loan rate and the share as given
+and asks what lenders earn, while this paper lets both sides of the market respond and asks which
+rate, share and utilisation clear it and keep it liquid. The incidence calculation is standard
+comparative statics; its contribution is the identification of the reserve share as a tax wedge
+whose base is the lenders' interest, and the resulting formula for the pool.
 
 \paragraph{Related work} Raising a capital buffer raises the price of credit when equity is dearer
 than funding \citep{bcbs2010}. We obtain the same logic for a buffer that lenders fund from their
@@ -143,7 +166,13 @@ The model uses the following features of the protocol's contract \citep{microcre
 \begin{itemize}
 \item \emph{Loans and the rate.} Loans last $T=30$ days, accrue simple interest, and carry a fixed annual
   rate $a=e+s$ that the pool sets at origination: the funding rate $e$ (the effective federal funds
-  rate, 4.33\% when deployed) plus a premium $s$. A share $f$ of interest goes to the protocol.
+  rate, 4.33\% at the time of the calibration) plus a premium $s$. A share $f$ of interest goes to the
+  protocol. Three configurations of the contract exist and we name them: the \emph{production} settings
+  are the calibrated defaults of the production deployment script at contract commit \texttt{b725a85},
+  a premium of \PremBps\ basis points and a reserve share of 65\%; the \emph{live} testnet deployment
+  uses a premium of 500 basis points and a share of 30\%; and the development defaults differ again.
+  ``Production rate'' below means the first. On 6 October 2026 the production script's default share
+  became an interim 45\% (contract commit \texttt{1812e7d}), pending review of this analysis.
 \item \emph{The reserve.} A share $r\in[0,1-f)$ of each interest payment joins the first-loss reserve $R$,
   which pays default losses before lenders do. Interest-funded reserve is never released. Anyone may
   add capital with \texttt{fundReserve}, which we call a seed. The contract would release seed
@@ -213,19 +242,36 @@ long-run result of \citet{pricingreserve2026}; the proof is in the appendix.
 
 \subsection{Participation}
 
-Lenders differ in what they require. A lender of type $(\theta,\alpha)$ deposits if the long-run
-yield covers the funding rate plus its required margin, $y(a,r)\ge e+\theta$, and if the probability
+Lenders differ in what they require. A lender of type $(\theta,\alpha)$ deposits if the yield it
+expects covers the funding rate plus its required margin, $\bar y\ge e+\theta$, and if the probability
 $p_H(r,k,a)$ that its return is negative in some year of the first $H$ years does not exceed its
 tolerance, $p_H\le\alpha$. Types are independent. Let $G$ be the distribution of $\theta$ and
 $A(p)=\Prob(\alpha\ge p)$ the share of lenders (by capacity $\bar V$) who tolerate a probability $p$,
 with $A$ nonincreasing and $A(0)=1$. The volume that lenders fund is
 \begin{equation}\label{eq:supply}
-  V^s(y,p)=\bar V\,G(y-e)\,A(p),
+  V^s(\bar y,p)=\bar V\,G(\bar y-e)\,A(p),
 \end{equation}
 that is, utilisation times deposits. Without a safety requirement, $A\equiv1$, and the volume
-$V^s(y)=\bar V\,G(y-e)$ has the inverse $\psi(V)=G^{-1}(V/\bar V)$: the margin over the funding rate
+$V^s(\bar y)=\bar V\,G(\bar y-e)$ has the inverse $\psi(V)=G^{-1}(V/\bar V)$: the margin over the funding rate
 that the marginal lender requires to fund volume $V$. The elasticity of supply is
-$\varepsilon=d\ln V^s/d\ln y=y/(V\psi'(V))$.
+$\varepsilon=d\ln V^s/d\ln \bar y=\bar y/(V\psi'(V))$.
+
+Two rules for the yield $\bar y$ are studied. Under the \emph{long-run rule}, $\bar y=y(a,r)$ of
+\eqref{eq:longrun}: the lender values its yield over an infinite horizon and its safety over the first
+$H$ years. This rule mixes horizons, and the mixture matters for the results, so we also state a
+\emph{common-horizon rule}: the lender values both over the same holding period $H$, with
+\begin{equation}\label{eq:yH}
+  \bar y=y_H(a,r,k):=\E\Bigl[\frac1H\sum_{t\le H}Y_t\Bigr]=u\bigl[a(1-f)-\EL\bigr]-\frac{\E R_H-k}{H},
+\end{equation}
+by the identity of Lemma~\ref{lem:return}. The second term is the build-up of the reserve over the
+holding period, per year: under this rule the share costs the lenders who fund the reserve even
+below $r_c$, and buys them safety only through the balance it builds. The lender in question belongs
+to the launch cohort, which faces a reserve equal to the seed; a lender that enters later finds a
+reserve already built and bears less of the cost, so the launch cohort is the conservative case for
+the pool. At $H=1$ the principal-loss event is $\{u\,L_1>u\,a(1-f)+k\}$, which does not depend on
+$r$ at all: a one-year lender pays the full cost of the share and gains no safety from it. The
+analytical results of Sections~\ref{sec:floor} to~\ref{sec:safety} are stated for the long-run rule;
+Section~\ref{sec:numbers} computes the equilibrium under both.
 
 \subsection{Borrowers}
 
@@ -405,9 +451,15 @@ equilibrium then exists and is unique for every $(r,k)$.
 \end{enumerate}
 \end{proposition}
 
-Part 1 says that a share whose inflow falls short of expected loss is never worth choosing: raising it costs
-lenders nothing in the long run and makes the pool safer. Part 3 says that outside first-loss capital raises volume at every share.
-Whether it should replace share depends on its cost, which Section~\ref{sec:numbers} compares.
+Part 1 says that, under the long-run rule, a share whose inflow falls short of expected loss is never worth choosing:
+raising it costs lenders nothing in the long run and makes the pool safer. The statement is a property of that rule.
+Under the common-horizon rule of \eqref{eq:yH}, the share below $r_c$ is not free, because the reserve it builds in the
+first $H$ years is interest the launch cohort does not receive, so the trade-off between yield and safety starts at
+$r=0$ and the volume-maximising share can lie below $r_c$; Section~\ref{sec:numbers} finds that it does over a
+five-year holding period and does not over ten. Part 3 says
+that outside first-loss capital raises volume at every share under either rule, since it lowers $p_H$ and, under the
+common-horizon rule, also the build-up term. Whether it should replace share depends on its cost, which
+Section~\ref{sec:numbers} compares over a common horizon.
 
 % ---------------------------------------------------------------------------------------------
 \section{Liquidity}\label{sec:liquidity}
@@ -415,26 +467,38 @@ Whether it should replace share depends on its cost, which Section~\ref{sec:numb
 Loans of term $T$ mature at a uniform rate if originations are staggered, so a fraction $dt/T$ of the loan book
 repays in each interval $dt$. Repayments go first to the queue of withdrawals.
 
-\begin{proposition}[Time to exit]\label{prop:liquidity}
-Suppose lenders request a fraction $W\le1$ of deposits at once, loans repay on time and uniformly over the term, and
-no new loan is made until the queue is paid. Let $q_0=(1-u)+c$ be the cash on hand per unit of deposits, with $c=R/D$ the
-reserve's cash cushion. The run is paid in full after
+\begin{proposition}[Time to exit with on-time repayment]\label{prop:liquidity}
+Suppose lenders request a fraction $W\le1$ of deposits at once, every loan repays its principal on time, maturities are
+uniform over the term, and no new loan is made until the queue is paid. Let $q_0=(1-u)+c$ be the cash on hand per unit of
+deposits, with $c=R/D$ the reserve's cash cushion. The run is paid in full after
 \begin{equation}\label{eq:wait}
   w(W)=T\,\frac{(W-q_0)^+}{u}
 \end{equation}
-days, so a full run takes $T\,(1-c/u)$ days at most. A run of size $W$ is paid within $\bar w$ days if and only if
+days, so a full run takes $T\,(1-c/u)^+$ days at most. For $0\le\bar w<T$, a run of size $W$ is paid within $\bar w$ days
+if and only if
 \begin{equation}\label{eq:ubound}
   u\le\frac{T\,(1-W+c)}{T-\bar w}.
 \end{equation}
 \end{proposition}
 
-The pool is therefore liquid at the scale of one loan term: $\WaitFull$ days for a full run, $\WaitHalf$ days for a run
+The proposition is a benchmark for on-time repayment, and the one-term bound is conditional on it. Under that
+assumption the pool is liquid at the scale of one loan term: $\WaitFull$ days for a full run, $\WaitHalf$ days for a run
 of half the deposits and $\WaitQuarter$ days for a quarter, at $u=\UBase\%$ and no cushion. A 10\% cushion
 from the reserve cuts the full run to $\WaitFullCushion$ days. A tighter target bounds utilisation. A seven-day guarantee against
 a run of half the deposits needs $u\le\UMaxHalfWeek\%$ ($\UMaxHalfWeekCushion\%$ with a 10\% cushion), against the contract's
 90\% cap. By \eqref{eq:identity}, the lower utilisation raises the floor from \AFreeAtCap\% to \AFreeAtULiq\%: that is what the
-guarantee costs borrowers (Table~\ref{tab:liquidity}). Late repayments lengthen the wait: if a fraction $\pi$ of maturing
-loans does not repay on time, replace $u$ by $(1-\pi)u$ in \eqref{eq:wait}.
+guarantee costs borrowers (Table~\ref{tab:liquidity}).
+
+Late loans are not a slower repayment rate but a gap in collections, and no rescaling of $u$ in \eqref{eq:wait}
+represents them. Let $C(t)$ be the cumulative principal collected by day $t$ of the run. With a fraction $\pi$ of the
+book paying only at a later date $t_\pi>T$, $C(t)=(1-\pi)\,u\,t/T$ for $t\le T$, $C$ is flat on $(T,t_\pi)$, and the
+run of size $W$ is paid at the first $t$ with $q_0+C(t)\ge W$. At $u=\UBase\%$, no cushion and $\pi=\LateShare\%$, the cash on hand
+plus all on-time principal is $\LateCollectedByTerm$ of deposits by day $T$; the remaining $\LateRemaining$ of a full
+run waits until the late loans pay, however far off $t_\pi$ is. If those loans default instead, the claim itself
+changes: the contract provisions the unpaid principal out of lenders' assets (\texttt{impairLoan}) and marks the loan
+down after the late period, so the queue is paid a smaller share value rather than waiting for cash. The time to
+receive the full face value and the time to redeem a reduced claim are different quantities, and the queue and
+share-valuation rules of the contract decide the second; we do not model it here.
 
 \begin{figure}[ht]
   \centering
@@ -469,6 +533,10 @@ $r\,a\,(\ell+d)$ and so holds a limit $\ell\,e^{r\,a\,t}$ after $t$ years. It do
 dollar of earned credit costs $1/r$ dollars of interest.
 \end{proposition}
 
+The exponential is the continuous-payment approximation. Under the contract's discrete cycle, in which a loan of one
+term is repaid and the limit redrawn $m=365/T=\TermsPerYear$ times a year, the idealised growth factor over a year is
+$(1+r\,a\,T/365)^m$, assuming no default and no other binding cap; at the production rate and $r=45\%$ it gives
+$\GrowthDiscFortyFive\%$ against $\GrowthContFortyFive\%$ for the exponential, a difference of a few basis points.
 At the production rate and $r=45\%$ the limit grows at $\GrowthAtFortyFive\%$ a year and doubles in $\DoubleAtFortyFive$ years; at
 $65\%$ it grows at $\GrowthAtSixtyFive\%$ and doubles in $\DoubleAtSixtyFive$ years. Moving from 45\% to 65\% buys a borrower
 \GrowthGain\ points of annual growth in its limit and costs lenders $\SlopePerPoint$ points of yield per point of share each year. Earned credit
@@ -517,8 +585,34 @@ removes that transfer. Second, a mean--variance penalty does not justify a large
 coefficient 5, 20 or 100 is \MVPenFive, \MVPenTwenty\ or \MVPenHundred\ basis points of annual return, against \ShareCostFortyFive\ percentage points a year for
 the move from $r_c$ to 45\% (Table~\ref{tab:seed}). Only a criterion tied to the loss of principal gives the share a role.
 
-Table~\ref{tab:rsafe} gives the smallest share that keeps the probability at or below a tolerance $\alpha$. Combined with
-Proposition~\ref{prop:rhat}, the share to choose is $\max\{r_c,\ r_{\mathrm{safe}}\}$.
+The loss model is the conditional asymptotic one: given the year's factor, the pool's loss rate is the conditional
+expectation, as in a pool of infinitely many small loans. A small pool adds idiosyncratic risk. Table~\ref{tab:finite}
+repeats the ten-year probability for pools of 100 and 1,000 loans, drawing each year's loss as a binomial count around
+the conditional rate: at $r=45\%$ the probability is \PTenFortyFivePoolHundred\% with 100 loans and
+\PTenFortyFivePoolThousand\% with 1,000, against \PTenAtFortyFive\% in the limit. The ordering of shares is unchanged;
+the level is not, so the safety numbers below are those of a large pool and a small pool needs its own.
+
+\begin{table}[ht]
+  \centering\small
+  \caption{Finite pools. Probability (\%) that lenders lose principal in some year of ten, no seed, by reserve share
+  (\%) and number of loans; the last column is the conditional asymptotic model of Table~\ref{tab:safety}.}
+  \label{tab:finite}
+  \begin{tabular}{rrrr}
+    \toprule
+    $r$ & 100 loans & 1,000 loans & limit \\
+    \midrule
+    \inputrows{data/table_finite_pool.tex}
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Table~\ref{tab:rsafe} gives the smallest share $r_{\mathrm{safe}}(\alpha)$ that keeps the probability at or below a
+tolerance $\alpha$. It answers a different problem from the equilibrium one: a pool with a single tolerance $\alpha$,
+holding the production rate fixed, that chooses the cheapest share meeting the tolerance. Under the long-run rule the
+answer to that problem is $\max\{r_c,\ r_{\mathrm{safe}}(\alpha)\}$, because shares up to $r_c$ are free; under the
+common-horizon rule it is $r_{\mathrm{safe}}(\alpha)$ itself, since every point of share costs the launch cohort. Neither
+is the volume-maximising share of Proposition~\ref{prop:rhat}, which averages over heterogeneous tolerances and lets
+the rate adjust.
 
 \begin{table}[ht]
   \centering\small
@@ -537,22 +631,32 @@ Proposition~\ref{prop:rhat}, the share to choose is $\max\{r_c,\ r_{\mathrm{safe
 
 \subsection{Seed capital against share}
 
-Table~\ref{tab:seed} asks what seed, added at the share $r_c$ that costs lenders nothing, gives the protection of a higher share. A
-share above $r_c$ costs lenders $u\,a\,(r-r_c)$ a year, per unit of deposits, for as long as the pool lives. A seed costs its
-funder a return on the capital committed. Matching the protection of 45\% takes a seed of \SeedEquivFortyFive\% of deposits, which costs
-\SeedCostFortyFive\% a year at a 15\% hurdle against $\ShareCostFortyFive\%$ for the share; matching 55\% takes a seed of
-\SeedEquivFiftyFive\%, which costs \SeedCostFiftyFive\% against $\ShareCostFiftyFive\%$. At the funding rate as the cost of capital the seed is cheaper still. The seed does not
-replace the reserve: it protects against the first years, while the reserve builds, and the model never releases it.
+Table~\ref{tab:seed} asks what seed, added at the share $r_c$, gives the protection of a higher share over the same ten
+years, and compares the two costs over that horizon. The share's cost to lenders is the difference in their mean annual
+return over the first ten years between $r_c$ and $r$, from the simulation of Table~\ref{tab:safety}; its long-run cost,
+$u\,a\,(r-r_c)$ a year, is shown beside it and is larger, because within ten years part of the extra inflow is still
+building the reserve that the lenders of $r_c$ would also have paid for. The seed is a gift to the pool: anyone may fund
+it, its funder recovers nothing, and its cost is therefore the annuity that repays it over the ten years at the funder's
+hurdle rate, $k\,h/[1-(1+h)^{-10}]$, which is \AnnuityAtE\ of the seed a year at the funding rate and \AnnuityAtFifteen\ at a
+15\% hurdle. Matching the protection of 45\% takes a seed of \SeedEquivFortyFive\% of deposits, which costs
+\SeedCostFortyFive\% a year at a 15\% hurdle and \SeedCostEFortyFive\% at the funding rate, against \ShareCostTenFortyFive\%
+a year for the share over the ten years (\ShareCostFortyFive\% in the long run); matching 55\% takes a seed of
+\SeedEquivFiftyFive\%, at \SeedCostFiftyFive\% and \SeedCostEFiftyFive\% against \ShareCostTenFiftyFive\%
+(\ShareCostFiftyFive\%). The comparison is a conditional numerical result: it depends on the horizon, on the hurdle rate,
+and on the seed being written off in full. The seed does not replace the reserve: it protects against the first years,
+while the reserve builds, and the model never releases it.
 
 \begin{table}[ht]
   \centering\small
-  \caption{Seed against share. Columns: the share (\%); its ten-year probability of losing principal (\%, no seed); the
-  seed (\% of deposits) that gives the same probability at $r_c$; the yearly cost to lenders of the share above $r_c$ (\%);
-  the yearly cost of the seed at a cost of capital equal to the funding rate and at 15\% (\%).}
+  \caption{Seed against share over a ten-year horizon. Columns: the share (\%); its ten-year probability of losing
+  principal (\%, no seed); the seed (\% of deposits) that gives the same probability at $r_c$; the yearly cost to lenders
+  of the share above $r_c$ in the long run, $u\,a\,(r-r_c)$, and over the first ten years, the difference in mean annual
+  return from Table~\ref{tab:safety} (\%); the yearly cost of the seed as a ten-year annuity at a hurdle rate equal to
+  the funding rate and at 15\% (\%).}
   \label{tab:seed}
-  \begin{tabular}{rrrrrr}
+  \begin{tabular}{rrrrrrr}
     \toprule
-    $r$ & prob. & seed & share cost & seed at $e$ & seed at 15\% \\
+    $r$ & prob. & seed & share, long run & share, ten years & seed at $e$ & seed at 15\% \\
     \midrule
     \inputrows{data/table_seed.tex}
     \bottomrule
@@ -577,6 +681,62 @@ reference level, and volume stays within 1\% of that peak for shares between \Lo
 \VFortyFiveBase, at 65\% it is \VSixtyFiveBase. Across the safety scenarios of Table~\ref{tab:eq} the peak lies between \RHatMin\% and
 \RHatMax\%, and volume falls steeply above about 55\%: the more elastic demand is, the faster. A seed leaves the peak
 almost where it is and raises volume at every share (Proposition~\ref{prop:rhat}, part~3): at the peak by \SeedGainTwo\% for a seed of 2\% of deposits and by \SeedGainFive\% for a seed of 5\%.
+
+\paragraph{Precision of the plateau} The plateau's endpoints come from a reserve grid of 0.25 points and a safety
+surface interpolated from a grid of 1.25 points in the share and 0.5 points in the rate, each cell from 100,000 paths.
+Table~\ref{tab:plateau} recomputes the base case on an independent set of 100,000 paths and on a grid twice as fine in
+both directions. The volume-maximising share moves by at most \RHatSpread\ points and the endpoints of the plateau by at
+most \PlateauLoSpread\ and \PlateauHiSpread\ points. The endpoints should be read to within half a point, not to the
+quarter point at which they are printed; the position of the plateau depends far more on the scenario inputs
+(Table~\ref{tab:eq}) and on the participation rule (below) than on the computation.
+
+\begin{table}[ht]
+  \centering\small
+  \caption{Sensitivity of the plateau, base case under the long-run rule. Rows: the paths and grid of the main
+  computation; an independent set of paths; a grid of 0.625 points in the share and 0.25 in the rate. Columns:
+  volume-maximising share (\%); shares within 1\% of the maximum (\%); volume at the maximum, at 45\% and at 65\%.}
+  \label{tab:plateau}
+  \begin{tabular}{lrrrrr}
+    \toprule
+    computation & $\hat r$ & within 1\% & max & 45\% & 65\% \\
+    \midrule
+    \inputrows{data/table_plateau_sensitivity.tex}
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\paragraph{A common holding period} The results so far use the long-run rule. Table~\ref{tab:horizon} and the dotted
+curves of Figure~\ref{fig:eq} repeat the computation under the common-horizon rule of \eqref{eq:yH}, in which the
+launch cohort values its expected average return and its safety over the same $H$ years. The build-up of the reserve
+is now a cost: at the production rate, the ten-year yield is \YTenAtZero\% with no reserve, \YTenAtRC\% at $r_c$
+(against a long-run \YLongAtRC\%) and \YTenAtFortyFive\% at 45\%. Without a safety requirement, volume is therefore
+highest with no reserve at all (\VZeroHTenYield\ of the reference volume at $r_c$) and falls at every share, where the
+long-run rule had it flat up to $r_c$. With the safety requirement the trade-off starts at zero, and over ten years the
+safety that the reserve buys outweighs its build-up by a wide margin: volume peaks at $\hat r=\RHatHTen\%$, within a
+point of the long-run peak, with a plateau from \LoNinetyNineHTen\% to \HiNinetyNineHTen\%; at 45\% volume is
+\VFortyFiveHTen\ and at 65\% \VSixtyFiveHTen. The horizon itself matters more than the rule: over a five-year holding
+period the peak is at \RHatHFive\%, below $r_c$, with a plateau from \LoNinetyNineHFive\% to \HiNinetyNineHFive\%,
+because a shorter horizon pays the same build-up for less of the protection. Across the common-horizon scenarios the
+peak lies between \RHatHMin\% and \RHatHMax\%. The two rules agree on the plateau at a ten-year horizon and on the cost
+of a share above 50\%; the paper's recommendation of a share a few points above $r_c$ is therefore robust to the hybrid
+of horizons in the first version, but not to a lender population with a horizon as short as five years. Which horizon
+describes the pool's lenders is an empirical question that the paper does not settle.
+
+\begin{table}[ht]
+  \centering\small
+  \caption{The volume-maximising share under the common-horizon rule. Columns: holding period $H$ (years); demand
+  elasticity $\eta$; mean tolerated probability $\bar\alpha$ (\%); seed (\% of deposits); volume-maximising share (\%);
+  volume at the maximum; shares within 1\% of the maximum (\%); volume at $r=0$, 45\%, 55\% and 65\%. Volumes relative
+  to the volume at $r_c$ with no seed under the same rule; $\tau=1\%$ throughout.}
+  \label{tab:horizon}
+  \begin{tabular}{rrrrrrrrrrr}
+    \toprule
+    $H$ & $\eta$ & $\bar\alpha$ & seed & $\hat r$ & max & within 1\% & $r=0$ & 45\% & 55\% & 65\% \\
+    \midrule
+    \inputrows{data/table_equilibrium_horizon.tex}
+    \bottomrule
+  \end{tabular}
+\end{table}
 
 \begin{figure}[ht]
   \centering
@@ -677,10 +837,13 @@ the 5\% book, above it for the 3\% book, and below it for the 10\% book.
   losses ($a\,r>\EL(a)$) lenders' yield $u\,a\,(1-f-r)$ is unaffected, but the lock fails once $\kappa\gamma>r$: $\gamma>\GammaProtectFortyFive$ at $r=45\%$ and $\gamma>\GammaProtectSixtyFive$ at 65\%. Neither value has been measured.
 \item \emph{Static, steady-state analysis.} The model compares equilibria. It does not model the path of deposits and loans, entry of
   competing pools, or the response of other protocols' rates.
-\item \emph{Safety-first with one criterion.} The probability of a negative return in a year of the first ten is one of several
-  reasonable criteria. It ignores the size of the loss and treats a loss of one cent as one of the whole deposit.
+\item \emph{Safety-first with one criterion, and two participation rules.} The probability of a negative return in a year of
+  the first ten is one of several reasonable criteria. It ignores the size of the loss and treats a loss of one cent as one of
+  the whole deposit. The two rules of Section~\ref{sec:model} bracket the horizon question but do not settle it: a discounted
+  utility over an uncertain holding period, with entry cohorts that find the reserve at different levels, would be a third.
 \item \emph{Liquidity assumes staggered maturities and on-time repayment.} Synchronised maturities change the shape of \eqref{eq:wait}
-  but not its bound for a full run; late repayment lengthens it.
+  but not its bound for a full run. Late loans open a gap in collections that no rate correction captures, and defaults change
+  the claim rather than its timing (Section~\ref{sec:liquidity}).
 \item \emph{The reserve's cash is idle.} The model leaves the cash that the reserve holds outside the lending base, as the contract does. Lending
   it would raise interest and risk, and the analysis here does not cover it.
 \item \emph{Synthetic accounts.} Nothing here is evidence about the welfare of borrowers.
@@ -689,20 +852,30 @@ the 5\% book, above it for the 3\% book, and below it for the 10\% book.
 % ---------------------------------------------------------------------------------------------
 \section{Implications for the choice of the share}\label{sec:implications}
 
-The analysis changes how the question is posed, and in this scenario supports six statements.
+The analysis changes how the question is posed, and in this scenario supports six statements. The objective throughout
+is loan volume, which is not borrowers' welfare.
 \begin{enumerate}
-\item \emph{The best share is a plateau near the share that covers expected loss, not a point.} For the 5\% book it extends from
-  \LoNinetyNine\% to \HiNinetyNine\%, with its peak about four to six points above $r_c$ in each of three books. The share that covers
-  expected loss is itself a function of the book: \RC\% at 5\%, 29.6\% at 3\%, 57.6\% at 10\%.
-\item \emph{Beyond the plateau the cost rises quickly.} Each point above $r_c$ costs lenders $\SlopePerPoint$ points of yield per
-  year; the equilibrium rate must rise, and volume falls by about \VolPerPointFifty\% per point near 50\% in the yield-only scenario (formula~\eqref{eq:incidence}) and faster above. Above $\RMaxLenders\%$
-  lenders earn less than the funding rate at the production rate.
-\item \emph{Seed capital is cheaper protection than share.} It protects the first years, when lenders bear most of the risk
-  and reserve funded by interest has not yet built up.
-\item \emph{The premium and the share move together.} If the share rises and the premium does not, volume falls to what lenders will
-  fund (Table~\ref{tab:eqcurve}, ``fixed''). The incidence formula gives the premium that restores volume.
+\item \emph{The best share is a plateau, not a point, and its position depends on how lenders value the horizon.} Under the
+  long-run rule the plateau for the 5\% book extends from \LoNinetyNine\% to \HiNinetyNine\%, with its peak a few points above $r_c$,
+  and it moves with the book across the three books of Table~\ref{tab:robust}. Under a common ten-year holding period it
+  extends from \LoNinetyNineHTen\% to \HiNinetyNineHTen\%, and over five years from \LoNinetyNineHFive\% to \HiNinetyNineHFive\%:
+  the reserve's build-up is a cost to the lenders who fund it, which weighs more the shorter their horizon.
+  The share that covers expected loss is itself a function of the book: \RC\% at 5\%, 29.6\% at 3\%, 57.6\% at 10\%.
+\item \emph{Beyond the plateau the cost rises quickly.} Each point above $r_c$ costs lenders $\SlopePerPoint$ points of long-run
+  yield per year; the equilibrium rate must rise, and volume falls by about \VolPerPointFifty\% per point near 50\% in the
+  yield-only scenario (formula~\eqref{eq:incidence}) and faster above. Above $\RMaxLenders\%$ lenders earn less than the funding
+  rate at the production rate.
+\item \emph{Seed capital can be cheaper protection than share, over the same horizon.} It protects the first years, when
+  lenders bear most of the risk and reserve funded by interest has not yet built up. Over ten years it costs less than the
+  equivalent share at the funding rate and about the same at a 15\% hurdle for the protection of 45\%, and less at both
+  rates for the protection of higher shares (Table~\ref{tab:seed}); the result is conditional on the horizon, the hurdle
+  and a seed that is never recovered.
+\item \emph{The premium and the share move together, and volume still falls.} If the share rises and the premium does not,
+  volume falls to what lenders will fund (Table~\ref{tab:eqcurve}, ``fixed''). The incidence formula gives the rate at which
+  the market clears again; at that rate volume is lower than before, by \eqref{eq:incidence}, not restored.
 \item \emph{The share is a weak lever for growing borrowers' credit.} Dues add a few percent a year to a limit (Table~\ref{tab:lender}).
-\item \emph{The pool is liquid at the scale of one loan term.} A stricter promise to lenders bounds utilisation and raises the rate floor.
+\item \emph{With on-time repayment the pool is liquid at the scale of one loan term.} A stricter promise to lenders bounds
+  utilisation and raises the rate floor; late loans add a delay of their own.
 \end{enumerate}
 These are results of the model and its scenarios. The choice of a share in production should also weigh what the model leaves out: the
 protocol's governance, the risk of the issuer's lines, the cost and availability of seed capital, and evidence from the pool itself.
@@ -755,7 +928,7 @@ In the regime $a\,r>\EL$, $y=u\,a\,(1-f-r)$, so $d\ln y=d\ln a-dr/(1-f-r)$. Alon
 If $\ell_t>0$ then $R_t=0$ and $Y_t=u\,a(1-f)-u\,L_t+R_{t-1}$; if $\ell_t=0$ then $Y_t=u\,a(1-f-r)>0$. So $Y_t<0$ if and only if $u\,L_t>u\,a(1-f)+R_{t-1}$. By induction on \eqref{eq:recursion}, on every path each $R_t$ is nondecreasing in $r$, $k$ and $a$. The right side of the inequality is nondecreasing in all three, so the event shrinks as any of them rises, and so does its probability. \hfill$\square$
 
 \paragraph{Proof of Proposition~\ref{prop:rhat}}
-(1) Equilibrium solves $\Phi(a;r)=\ln V^s(y(a,r),p_H(r,k,a))-\ln V^d(a)=0$. Existence of an equilibrium and its uniqueness follow as in Proposition~\ref{prop:eq}: $\Phi$ is strictly increasing in $a$ (by Lemma~\ref{lem:mono}, $p_H$ falls as $a$ rises, so supply rises), equals $-\infty$ for $y\le e$ and is positive for large $a$. The root $a^*(r)$ is continuous in $r$, so $V^*$ is continuous; and since $(1-f-r)\,a^*\ge e/u$ by \eqref{eq:identity}, $a^*\to\infty$ and $V^*\to0$ as $r\to1-f$, so $V^*$ attains its maximum. Take a maximiser $r_0$. If $a^*(r_0)\,r_0\ge\EL$ we are done. Otherwise let $r_1=\EL/a^*(r_0)>r_0$ and $a=a^*(r_0)$. Then $\max\{\EL,a\,r_1\}=\EL=\max\{\EL,a\,r_0\}$, so the yield is the same, and $p_H(r_1,k,a)\le p_H(r_0,k,a)$ by Lemma~\ref{lem:mono}, so supply at $a$ is no smaller. As supply increases in $a$ (through $y$ and $p_H$) and demand decreases, the equilibrium rate at $r_1$ is no larger, so $V^*(r_1)\ge V^*(r_0)$ and $r_1$ is also a maximiser, with $a^*(r_1)\,r_1\ge\EL$.
+(1) Equilibrium solves $\Phi(a;r)=\ln V^s(y(a,r),p_H(r,k,a))-\ln V^d(a)=0$. Existence of an equilibrium and its uniqueness follow as in Proposition~\ref{prop:eq}: $\Phi$ is strictly increasing in $a$ (by Lemma~\ref{lem:mono}, $p_H$ falls as $a$ rises, so supply rises), equals $-\infty$ for $y\le e$ and is positive for large $a$. The root $a^*(r)$ is continuous in $r$, so $V^*$ is continuous; and since $(1-f-r)\,a^*\ge e/u$ by \eqref{eq:identity}, $a^*\to\infty$ and $V^*\to0$ as $r\to1-f$, so $V^*$ attains its maximum. Take a maximiser $r_0$. If $a^*(r_0)\,r_0\ge\EL$ we are done. Otherwise let $r_1=\EL/a^*(r_0)>r_0$ and $a=a^*(r_0)$. Then $\max\{\EL,a\,r_1\}=\EL=\max\{\EL,a\,r_0\}$, so the yield is the same, and $p_H(r_1,k,a)\le p_H(r_0,k,a)$ by Lemma~\ref{lem:mono}, so supply at $a$ is no smaller. As supply increases in $a$ (through $y$ and $p_H$) and demand decreases, the equilibrium rate at $r_1$ is no larger, so $V^*(r_1)\ge V^*(r_0)$. Since $r_0$ is a global maximiser, $V^*(r_1)=V^*(r_0)$, and because $V^d$ is strictly decreasing this forces $a^*(r_1)=a^*(r_0)=a$. Hence $r_1$ is also a maximiser and $a^*(r_1)\,r_1=a\,r_1=\EL$, which is what was claimed. (The inequality $a^*(r_1)\le a$ alone would give $a^*(r_1)\,r_1\le\EL$, the wrong direction; the equality of volumes is the step that closes it.)
 (2) At an interior maximiser $dV^*/dr=0$, hence $da^*/dr=0$, so $\partial\Phi/\partial r=0$: $\partial\ln V^s/\partial r=-s_y\,u\,a+s_p\,\pi_r=0$, using $\partial y/\partial r=-u\,a$ in the regime $a\,r>\EL$, which is \eqref{eq:foc}.
 (3) By Lemma~\ref{lem:mono}, $p_H$ is nonincreasing in $k$, so supply is nondecreasing in $k$ at every $(a,r)$, and the equilibrium rate is nonincreasing and volume nondecreasing. \hfill$\square$
 
