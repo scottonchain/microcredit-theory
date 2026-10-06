@@ -42,16 +42,16 @@
 \authorsaddresses{}
 
 \begin{abstract}
-Lending protocols on public blockchains require collateral worth more than the loan, because
-accounts cost nothing to create and a protocol cannot tell one person from many. We study a lending
+The lending protocols deployed on public blockchains require collateral worth more than the loan,
+because accounts cost nothing to create and a protocol cannot tell one person from many. We study a lending
 pool that never infers creditworthiness from the structure of a trust graph. Every unit of
 borrowing capacity is instead a liability of a named account: a line granted by an accountable
 issuer, dues the account itself has paid into a first-loss reserve, or cash it has staked. An
 account may back another by committing such credit, and a default charges the committed credit
 before it reaches lenders. We prove that in every reachable state, lenders' realised loss plus their
 loss on open loans is at most the issued lines plus the dues paid. Consequently, the loss a coalition
-can cause is at most the credit issued inside it plus the unsecured backing that crosses into it,
-whatever the number of accounts it controls. When lines change, the bound holds for each account's
+can cause is at most the credit issued inside it plus the unsecured backing that has ever been
+committed to it from outside, whatever the number of accounts it controls. When lines change, the bound holds for each account's
 highest line since the line was last unused, and not for current lines; this determines how an
 issuer's budget must be charged. We also prove that any rule granting credit for repayment history
 beyond the value that history irrevocably surrendered can be farmed for profit linear in the number
@@ -81,8 +81,8 @@ executions reached \FuzzMaxI\% of the loss bound.
 % ---------------------------------------------------------------------------------------------
 \section{Introduction}\label{sec:intro}
 
-Lending protocols on public blockchains are overcollateralised. A borrower locks assets worth more
-than the loan, and a smart contract sells them if their value falls
+The lending protocols deployed on public blockchains are overcollateralised. A borrower locks assets
+worth more than the loan, and a smart contract sells them if their value falls
 \citep{leshner2019compound,aave2020}. The requirement follows from the setting. Accounts cost
 nothing to create and carry no identity, so a protocol that extended unsecured credit to one account
 would extend it to every account an attacker can create \citep{douceur2002sybil}. On-chain credit
@@ -141,10 +141,45 @@ impossibility result that fixes how much credit on-chain repayment history may e
   surrendered can be farmed for profit linear in the number of accounts. We determine that value
   for the protocol, show that interest paid to lenders does not count when the payer can also be a
   lender (Proposition~\ref{prop:lender}), and derive a trilemma (Corollary~\ref{cor:trilemma}).
-\item An implementation as a smart contract, stateful fuzzing of every bound against an
-  independent model, a mutation analysis of that fuzzing, and a simulation of the mechanism and
-  three alternatives under six attacks (Section~\ref{sec:validation}).
+\item An implementation as a smart contract, stateful fuzzing of the fixed-line bounds against a
+  separately coded model, a mutation analysis of that fuzzing, unit tests for the changing-line and
+  history results, and a simulation of the mechanism and three alternatives under six attacks
+  (Section~\ref{sec:validation}). Table~\ref{tab:coverage} says which harness covers which result.
 \end{itemize}
+
+\paragraph{What the guarantees are, and are not.} Table~\ref{tab:guarantees} states each guarantee
+with its right-hand side and its domain, because the three right-hand sides differ and the prose
+``Sybil-proof'' needs a precise referent. The results bound losses by issued resources and
+cumulative external commitments; they do not say that no attacker can profit, that social
+manipulation is prevented, or that a live issuance budget limits lifetime loss. The paper itself
+gives the cases: a backer that colludes with a borrower loses its own line and the pool loses no
+more (Section~\ref{sec:sim}); an agent holding most of the pool can gain from a pooled reserve under
+stress (Proposition~\ref{prop:pooled}); and a budget charged on held lines bounds exposure at every
+moment but a line can be lost once per cycle of use (Section~\ref{sec:changing}). The sense in which
+the protocol is sybilproof is that of \citet{cheng2005sybilproof} applied to a coalition's capacity:
+no strategy of creating accounts or arranging backing among them raises the coalition's total
+borrowing capacity (Corollary~\ref{cor:coalition-capacity}) or the loss it can cause
+(Corollary~\ref{cor:cut}). A strategy-comparison statement that no deviation from honest behaviour is
+profitable for any agent is not proved and is false in the pooled-reserve case; what the simulation
+of Section~\ref{sec:sim} shows is that none of six attacks gains from additional accounts.
+
+\begin{table}[t]
+  \caption{The guarantees, their right-hand sides and their domains.}
+  \label{tab:guarantees}
+  \centering\small
+  \begin{tabular}{p{0.22\linewidth}p{0.3\linewidth}p{0.4\linewidth}}
+    \toprule
+    Result & Bounds & By, and under what \\
+    \midrule
+    Theorem~\ref{thm:capacity}, Corollary~\ref{cor:coalition-capacity} & total borrowing capacity, at an instant & granted credit plus committed stake; for a coalition, its own plus the backing crossing into it now \\
+    Theorem~\ref{thm:loss} & cumulative realised loss plus current potential loss & issued lines plus dues paid; lines fixed \\
+    Corollary~\ref{cor:cut} & the same, for a coalition $S$ & lines and dues inside $S$ plus the unsecured backing ever committed into $S$ (a cumulative quantity, not the capacity of the current cut) \\
+    Corollary~\ref{cor:reserve} & lenders' share of the above & issued lines; lines fixed, the release rule in force \\
+    Theorem~\ref{thm:changing}, Corollary~\ref{cor:budget} & current potential loss only & peak lines since last idle plus dues; or the budget times the maximum line; realised loss can recur once per cycle of use \\
+    Theorem~\ref{thm:farming}, Corollary~\ref{cor:trilemma} & (an attack, not a bound) & any account-local history rule that grants more than a recyclable history surrendered is farmable linearly in accounts \\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
 \paragraph{Scope.} The bounds concern principal. Interest that a defaulter never pays is lost
 income, which the price of credit must cover. The bounds do not say that an issuer's lines are wise,
@@ -208,6 +243,26 @@ Corollary~\ref{cor:budget} bounds the damage if it fails.
 \citep{leshner2019compound,aave2020}. Flash loans make capital free to use within one transaction
 \citep{qin2021flash}. This matters for Theorem~\ref{thm:farming}: a history that can be completed
 with capital returned at its end costs only the use of that capital.
+
+\paragraph{What is new here, claim by claim.} The principle that trust should carry liability is
+not new, and the closest prior construction deserves a precise comparison. Trust Is Risk
+\citep{litos2017trust} realises it in cash: two parties fund a shared account, and the trust one
+places in the other is the cash it stands to lose; its Sybil-resilience result bounds an attacker's
+gain by the trust honest parties placed in it. The protocol here carries liability in three
+currencies, cash (stake), issued credit and dues, of which only the first recovers anything at a
+default, and its accounting must therefore separate cash recovered from credit burned
+(Definition~\ref{def:losses}); the per-account invariant~\eqref{eq:Q} and Theorem~\ref{thm:loss} are
+the contribution, with proofs that cover partial repayment, several open loans, defaults of backers,
+revocation, and lines that change (Theorem~\ref{thm:changing}), none of which arise in a cash
+construction. The cut form of Corollary~\ref{cor:cut} is the form of SybilLimit's bound
+\citep{yu2008sybillimit}, obtained here without a random-walk assumption, as an accounting identity
+rather than a property of a graph. Borrowing capacity as a maximum flow is the credit-network result
+\citep{dandekar2011liquidity}; the one-hop rule is the special case of paths of length one, and the
+coverage discount~\eqref{eq:coverage} is specific to credit that can be burned. The farming theorem
+is the counterpart for credit of the result of \citet{friedman2001cheap} on dues for reputation; its
+contribution is the identification, for this protocol, of what a history surrenders when the agent
+may also be a lender (Propositions~\ref{prop:lender} and~\ref{prop:pooled}). The conservation
+invariant is, in our view, the strongest candidate for a contribution beyond the implementation.
 
 % ---------------------------------------------------------------------------------------------
 \section{Model}\label{sec:model}
@@ -358,11 +413,24 @@ Corollary~\ref{cor:reserve} separates what lenders bear.
 
 \begin{remark}[Arithmetic]\label{rem:arithmetic}
 The analysis uses exact arithmetic. The implementation works in integer units of $10^{-6}$ USDC
-with division rounded down. Rounding down coverage only lowers limits. Rounding down the pro-rata
-charges can leave up to one unit per backing edge per default uncharged, and a loan whose balance
-falls below one cent is closed with the remainder forgiven. Both enlarge the right-hand side of
-Theorem~\ref{thm:loss} by at most those amounts, and the fuzzing harness of
-Section~\ref{sec:fuzz} carries them explicitly.
+with division rounded down, and the rounding accumulates over the life of the system, so the
+integer-arithmetic form of each bound carries an explicit error term. Three roundings occur.
+Rounding down coverage~\eqref{eq:coverage} and the dues credited to an account only lowers limits
+and the right-hand sides, in the safe direction. Rounding down each pro-rata charge $a_u$ or $b_u$ in
+Algorithm~\ref{alg:default} leaves less than one unit uncharged per (default, backer) pair; with $E$
+such pairs so far, at most $E$ units of loss are attributed to nobody. A loan whose balance falls
+below one cent is closed with the remainder forgiven, less than one cent per closure; with $C$ such
+closures, lenders or the reserve have absorbed less than $C$ cents that no default attributed. The
+integer-arithmetic forms are therefore
+\[
+  \Lambda+U\le\sum_a\bigl(\ell(a)+d(a)\bigr)+E\cdot10^{-6}\quad\text{(Theorem~\ref{thm:loss})},\qquad
+  \Lambda_L+\Phi_L+\max\{0,U-R\}\le\sum_a\ell(a)+E\cdot10^{-6}+C\cdot10^{-2}\quad\text{(Corollary~\ref{cor:reserve})},
+\]
+in USDC, where $\Phi_L$ is the forgiven principal that fell on lenders, and the same terms attach to
+Corollary~\ref{cor:cut} and Theorem~\ref{thm:changing}. The campaign of Section~\ref{sec:fuzz} has
+$E$ at most 32 times its \FuzzDefaults{} defaults and $C$ at most its \FuzzLoans{} loans; its harness
+does not use these bounds but tracks the exact rounding loss of every charge and the exact forgiven
+amount of every closure, and asserts the inequalities with those terms.
 \end{remark}
 
 % ---------------------------------------------------------------------------------------------
@@ -563,9 +631,13 @@ $K_{H\to S}$. The statement about honest backers follows in the same way.
 \end{proof}
 
 Accounts with no issued line, no dues and no backing from outside contribute nothing to the bound,
-however many there are. The bound is the capacity of a cut: the credit the issuer placed inside $S$,
-the dues $S$ itself paid, and the unsecured trust that crosses into $S$. It parallels the role of
-attack edges in SybilLimit \citep{yu2008sybillimit}.
+however many there are. The bound has the form of a cut: the credit the issuer placed inside $S$,
+the dues $S$ itself paid, and the unsecured trust that has crossed into $S$. It parallels the role of
+attack edges in SybilLimit \citep{yu2008sybillimit}, with one difference that matters: $K_{H\to S}$ is
+cumulative. An honest backer that commits credit into $S$, cuts the backing, and commits it again
+adds to $K_{H\to S}$ each time, even though the capacity of the current cut is unchanged, and each
+commitment can be lost once. The right-hand side of Corollary~\ref{cor:coalition-capacity}, by
+contrast, is the current cut, because it bounds capacity at an instant.
 
 The last corollary separates what the reserve pays from what lenders bear. Let $F$ be the capital
 added by \Op{Fund}, $D$ the amount released to lenders, and $\Lambda_L$ the part of $\Lambda$ that
@@ -594,9 +666,13 @@ $R=0$. In that state~\eqref{eq:reserve-bound} with $U\ge0$ gives $\Lambda_L\le\s
 $\Lambda_L$ has not changed since.
 \end{proof}
 
-Dues therefore cost lenders nothing: the losses that credit earned through dues can cause are
-absorbed by the reserve those dues funded. Lenders' exposure is to the issued lines only, and every
-unit of external first-loss capital $F$ comes off it while losses exceed the reserve.
+Dues therefore add no uncovered principal-loss budget under this corollary: the losses that credit
+earned through dues can cause are absorbed by the reserve those dues funded. Lenders' exposure to
+principal is to the issued lines only, and every unit of external first-loss capital $F$ comes off it
+while losses exceed the reserve. Dues are not free to lenders in another sense: the interest withheld
+into a reserve that is never released is interest lenders do not receive, and the companion pricing
+paper shows that a reserve share above the ratio of expected loss to the loan rate costs them yield
+\citep{pricingreserve2026}. The corollary is about principal.
 
 % ---------------------------------------------------------------------------------------------
 \section{Lines That Change}\label{sec:changing}
@@ -673,8 +749,17 @@ raises $\beta(a)$ to $q(a)$. A report is rejected if it raises $\sum_a\beta(a)$ 
 by more than a per-report cap. A release operation, callable by anyone, lowers $\beta(a)$ to $q(a)$,
 but only while $a$ is idle.
 
+The corollary needs four assumptions about what lies outside the budget, each of which the
+implementation makes an owner action behind a timelock rather than an issuer action: the maximum
+line $M$ is fixed (raising it raises every line at once, outside the budget); every line is issued
+through the budget, so the owner's direct overrides of a score and a change of the score provider
+are excluded; the budget's idleness check reads the one pool that lends against the scores; and the
+budget $B$ and the per-report cap are not raised. The bound is on the issuer, including a compromised
+one, and not on governance.
+
 \begin{corollary}[Issuance budget]\label{cor:budget}
-If every line is issued through such a budget, then in every reachable state
+If every line is issued through such a budget, with $M$, $B$ and the per-report cap fixed and the
+budget's idleness check reading the pool that lends against the scores, then in every reachable state
 $U\le MB+\sum_a d(a)$.
 \end{corollary}
 
@@ -708,23 +793,42 @@ A history $H$ is \emph{recyclable with capital $K$} if an agent that holds $K$ i
 controls a new account $a$, and possibly other accounts, can act so that afterwards $a$'s record is
 $H$, $a$ has no open loans and no backing given or received, and the agent again holds
 $K-\pi(H)$ for some $\pi(H)\ge0$. We call $\pi(H)$ the value $H$ \emph{surrendered}: what the
-history moved out of the agent's reach, net of anything the agent recovers in any capacity.
+history moved out of the agent's reach, net of anything the agent recovers in any capacity. The
+agent's \emph{profit} from a sequence of actions is its final holding of liquid funds less its
+initial one; accounts it abandons are worth nothing to it, and credit it holds but has not drawn is
+not counted.
 \end{definition}
 
 \begin{theorem}[Farming]\label{thm:farming}
-Suppose accounts are free and some history $H$ is recyclable with capital $K$ and has
-$\eta(H)>\pi(H)$. Then for every $n\ge1$, an agent holding $K+n\pi(H)$ can end with a net profit of
-$n\bigl(\eta(H)-\pi(H)\bigr)$, which the other participants lose, provided the pool can lend
-$n\eta(H)$.
+Suppose that
+\begin{enumerate}
+\item[(i)] accounts are free;
+\item[(ii)] the history rule is account-local: $\eta(H_a)$ depends only on $a$'s own record, and the
+  credit it grants is uncommitted and uncharged once the record is complete;
+\item[(iii)] some history $H$ is recyclable with capital $K$, and the agent can complete it on fresh
+  accounts any number of times with the same capital;
+\item[(iv)] $\eta(H)>\pi(H)$; and
+\item[(v)] the lending rules let each account draw $\eta(H)$ once its record is $H$: the pool can lend
+  $n\,\eta(H)$ and no cap on the account binds.
+\end{enumerate}
+Then for every $n\ge1$, an agent holding $K+n\pi(H)$ can end with a profit of
+$n\bigl(\eta(H)-\pi(H)\bigr)$, which the other participants lose.
 \end{theorem}
 
 \begin{proof}
-For $i=1,\dots,n$, the agent creates a new account $a_i$ and completes $H$ on it, recovering
-$K-\pi(H)$, and tops its capital up to $K$. Each $a_i$ then has $\ell=\lambda=\delta=0$, no
-commitments and granted credit $\eta(H)$, so $\Lim(a_i)\ge\eta(H)$. Each $a_i$ borrows $\eta(H)$
-and never repays. The agent has paid $n\pi(H)$ and received $n\eta(H)$. Abandoning an account costs
-the agent nothing, because an account is all that a default can sanction.
+For $i=1,\dots,n$, the agent creates a new account $a_i$ (i) and completes $H$ on it (iii),
+recovering $K-\pi(H)$, and tops its capital up to $K$. By (ii), each $a_i$ then has
+$\ell=\lambda=\delta=0$, no commitments and granted credit $\eta(H)$, so $\Lim(a_i)\ge\eta(H)$. By
+(v), each $a_i$ borrows $\eta(H)$; it never repays. The agent has paid $n\pi(H)$ and received
+$n\eta(H)$, and (iv) makes the difference positive. Abandoning an account costs the agent nothing,
+because an account is all that a default can sanction.
 \end{proof}
+
+Hypothesis (ii) excludes rules in which history credit depends on global state, such as a cap on
+the total history credit outstanding, and (v) excludes a pool that refuses to disburse it; such
+rules escape the theorem by limiting, in effect, what any history can earn, which is the first horn
+of the trilemma below in another form. Hypothesis (iii) is where finite capital enters: one
+execution's capital must be reusable, which secured backing makes true here (Figure~\ref{fig:seed}).
 
 \begin{figure}[t]
   \centering
@@ -747,11 +851,13 @@ those loans pay no interest, so $\pi(H)=0$ and each account yields the maximum l
 not where it runs, is what is farmable.
 
 \begin{corollary}[Trilemma]\label{cor:trilemma}
-No lending protocol has all three of the following properties:
+Among lending protocols whose history rule is account-local and whose lending rules disburse the
+credit it grants (hypotheses (ii) and (v) of Theorem~\ref{thm:farming}), none has all three of the
+following properties:
 \begin{enumerate}
 \item accounts are free;
-\item some history recyclable with finite capital earns more credit than it surrenders,
-  $\eta(H)>\pi(H)$;
+\item some history recyclable with finite capital, and repeatable on fresh accounts with that
+  capital, earns more credit than it surrenders, $\eta(H)>\pi(H)$;
 \item for every set $S$ of accounts, the loss to others from loans to $S$ is at most the lines
   issued to $S$, plus the value $S$ has surrendered, plus the backing other accounts committed to $S$.
 \end{enumerate}
@@ -760,7 +866,8 @@ No lending protocol has all three of the following properties:
 \begin{proof}
 Let $S$ be all the accounts of the agent in the construction of Theorem~\ref{thm:farming},
 including any that supplies the capital. Then $S$ holds no issued lines, receives no backing from
-other accounts, and has surrendered $n\pi(H)$, but the loans to $S$ cost others $n\eta(H)>n\pi(H)$.
+other accounts, and has surrendered $n\pi(H)$, but the loans to $S$ cost others $n\eta(H)>n\pi(H)$,
+which exceeds the right-hand side of property 3 for large $n$.
 \end{proof}
 
 This protocol keeps the first and third properties: by Corollary~\ref{cor:cut}, with dues in place
@@ -827,10 +934,38 @@ except in that case.
 
 The protocol is implemented as a Solidity contract of about 24\,kB of bytecode
 \citep{microcredit2026contract}. Appendix~\ref{app:implementation} maps the symbols of
-Section~\ref{sec:model} to the contract's state and functions. The implementation adds a lending
+Section~\ref{sec:model} to the contract's state and functions. The map is a correspondence, not a
+refinement proof: nothing here shows that the contract's transitions are the operations of
+Section~\ref{sec:model} in every case. The bridge is the validation below, whose coverage
+Table~\ref{tab:coverage} states result by result, with its gaps. The implementation adds a lending
 pool with shares, interest at a fixed rate set at origination, meta-transactions, provisioning of
 overdue loans, and an issuer contract that enforces the budget of Corollary~\ref{cor:budget}. A
 deployment on a public test network holds test funds only.
+
+\begin{table}[t]
+  \caption{Which harness covers which result, at the commit cited. The campaign's issued lines are
+  set once at setup and never change, so the changing-line results rest on unit tests. The handler's
+  model was coded separately from the contract by AI agents working with the project; it is a
+  separate oracle, not an independent reviewer.}
+  \label{tab:coverage}
+  \centering\small
+  \begin{tabular}{p{0.2\linewidth}p{0.3\linewidth}p{0.42\linewidth}}
+    \toprule
+    Result & Campaign property (Section~\ref{sec:fuzz}) & Unit, fork or simulation test; gaps \\
+    \midrule
+    Theorem~\ref{thm:capacity} & \texttt{I1\_capacityBound}, \texttt{I1b\_lostCreditBacksNobody} & \\
+    Lemma~\ref{lem:Q} & \texttt{Q\_perAccountCreditBudget} & \\
+    Theorem~\ref{thm:loss} & \texttt{I2\_lossBound} & \\
+    Corollary~\ref{cor:cut} & \texttt{I3\_sybilIndependence}, \texttt{I4\_sybilsCommitNothingTheyDidNotPay} (the Sybil coalition only) & \texttt{\seqsplit{testStakedRingBorrowsNoMoreThanItsStakeAndLendersLoseNothing}}; the cut for an arbitrary $S$ with honest backers on both sides is not asserted \\
+    Corollary~\ref{cor:reserve} & \texttt{I8\_honestLendersPayOnlyForIssuedLines} & \texttt{\seqsplit{testReservePaysUncoveredLossBeforeLenders}}, \texttt{\seqsplit{testOnlyCapitalBeyondDuesIsReleased}}; the handler's model of release predates the rule that keeps dues (Section~\ref{sec:mutation}) \\
+    Theorem~\ref{thm:changing}, Proposition~\ref{prop:rotation} & none: lines are fixed in the campaign & \texttt{\seqsplit{testCompromisedOracleCannotRotateItsBudget}} (the rotation of Proposition~\ref{prop:rotation}); general line changes during a run are not fuzzed \\
+    Corollary~\ref{cor:budget} & none & \texttt{\seqsplit{testReportsCannotIssueBeyondTheBudget}}, \texttt{\seqsplit{testBudgetStaysHeldWhileALineMayBeInUse}}, \texttt{\seqsplit{testReleaseNeedsTheLendingPool}}, \texttt{\seqsplit{testOneReportCanRaiseScoresOnlySoFar}}; the owner actions listed before the corollary are outside it \\
+    Theorem~\ref{thm:farming} & none & \texttt{\seqsplit{testRecycledSeedBuildsHistoryThatEarnsNoCredit}}; the recycled-seed attack of Section~\ref{sec:sim} \\
+    Propositions~\ref{prop:lender}, \ref{prop:pooled} & none & \texttt{\seqsplit{testAttackerWhoIsAlsoALenderCannotFarmDues}}; the fork tests \texttt{\seqsplit{testCI21ReserveExhaustedHalfPool}} and \texttt{\seqsplit{testCI21ReserveExhaustedDominantLender}} on a copy of the deployed contract \\
+    Pool accounting & \texttt{I5\_solvency}, \texttt{I6\_lenderClaims}, \texttt{I7\_impairment}, \texttt{creditLedgers}, \texttt{poolLedgers}, \texttt{handlerHealth} & \\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
 \subsection{Stateful fuzzing}\label{sec:fuzz}
 
@@ -851,7 +986,10 @@ tests, each with \FuzzRunsPerTest{} runs of \FuzzDepth{} calls. No assertion fai
 executions used up to \FuzzMaxQ\% of an account's budget in~\eqref{eq:Q} and up to \FuzzMaxI\% of
 the bound of Theorem~\ref{thm:loss}, so the bounds are close to tight on random executions, not
 only in constructed ones. The one backing by a Sybil account that was accepted committed credit the
-account had earned as dues, which the property on Sybil commitments allows and checks.
+account had earned as dues, which the property on Sybil commitments allows and checks. The campaign
+is a fixed-line campaign: the three issued lines are set at setup and never change, so it exercises
+Sections~\ref{sec:capacity} and~\ref{sec:loss} and not Section~\ref{sec:changing}, whose results rest
+on the unit tests of Table~\ref{tab:coverage}.
 
 \begin{table}[t]
   \caption{One stateful fuzzing campaign (commit b725a85). Counts are totals over all runs; a default
@@ -886,8 +1024,10 @@ that failed. A fault that no seed detected was run against the contract's unit t
 \MutationSummary{} The three faults the fuzzing missed each remove a precondition that the
 handler rarely or never crosses: it never asks an account to back itself, its model of releasing the
 reserve predates the rule that keeps dues, and a cut that leaves a borrower owing more than its limit
-needs a cut and an open loan drawing on the same backing. Strengthening the handler on these three
-points is the next step for the harness.
+needs a cut and an open loan drawing on the same backing. Each is caught by a unit test, and
+Table~\ref{tab:coverage} records the gap. Adding the three sequences to the handler, and letting
+lines change during a run, is the next step for the harness; until then the campaign covers the
+fixed-line bounds and not every implemented bound.
 
 \begin{table}[t]
   \caption{Seeded faults, the number of fuzz seeds (of three) under which the default campaign
@@ -999,7 +1139,8 @@ that chose the borrower. Quantifying the liquidity this costs is the subject of 
 Collateral-free lending with free identities is possible if borrowing capacity is conserved rather
 than inferred. In the protocol studied here, every unit of capacity is a liability of a named
 account. Lenders' loss is then bounded by the issued lines plus the dues paid, in every reachable
-state and for any coalition, independently of the number of accounts. Histories can earn credit
+state, and for any coalition by what was issued to it, what it surrendered and what others ever
+committed to it, independently of the number of accounts. Histories can earn credit
 only up to what they surrender, and larger credit requires an issuer whose budget is charged on peak
 lines. The results move the hard problem from detecting Sybil accounts, which is impossible, to
 issuing credit well, which is a problem of information and accountability.
