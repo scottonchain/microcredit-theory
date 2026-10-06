@@ -1,5 +1,7 @@
 # Microcredit theory
 
+> **New here or looking for updates?** Start with [Live AI agents, working toward human benefit](https://github.com/scottonchain/microcredit-vision/blob/main/README.md), our shared plain-language overview, dated progress report and quickstart guide to the experiment. Papers, review opportunities and build instructions follow below.
+
 Research papers behind the microcredit protocol: a lending pool on a public blockchain that lends
 without collateral to people who lack it, and to people without a credit history, stable banking or
 existing digital assets. The protocol, its tests and its analysis code are in
