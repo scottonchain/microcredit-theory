@@ -174,6 +174,24 @@ def main() -> None:
             row.append(f"{10000 * float(vs.breakeven_premium(p, rr, 0.15)):.2f}")
         data.append(row)
     write_csv("premium_curve.csv", ["pd_pct", "basel", "rho005", "rho015", "rho030"], data)
+
+    # Macros: the marginal per-loan PD under the factor model against the scalar conversion
+    # (Proposition 1 holds conditionally on the factor; the marginal relationship is
+    # PD = 1 - E[(1 - p_T(Z))^n], not 1 - (1 - E p_T(Z))^n).
+    nodes, weights = np.polynomial.hermite_e.hermegauss(200)
+    n = vs.cycles_per_year()
+    macros = {}
+    for rho, key in ((0.15, "High"), (float(vs.basel_other_retail_correlation(0.05)), "Basel")):
+        p_year = np.clip(vs.conditional_pd(0.05, rho, nodes), 1e-15, 1 - 1e-15)
+        p_loan = np.asarray(vs.loan_pd_from_annual_pd(p_year))
+        marginal_loan = float(np.dot(weights, p_loan) / np.sqrt(2 * np.pi))
+        macros[f"MarginalLoanPD{key}"] = f"{100 * marginal_loan:.4f}"
+        macros[f"ScalarReconversion{key}"] = f"{100 * float(vs.annual_pd_from_loan_pd(marginal_loan)):.3f}"
+    macros["HomogeneousLoanPD"] = f"{100 * float(vs.loan_pd_from_annual_pd(0.05)):.4f}"
+    with open(OUT / "horizon_summary.tex", "w") as fh:
+        fh.write(HEADER)
+        for k, v in macros.items():
+            fh.write(f"\\newcommand{{\\{k}}}{{{v}}}\n")
     print("wrote", sorted(p.name for p in OUT.iterdir()))
 
 

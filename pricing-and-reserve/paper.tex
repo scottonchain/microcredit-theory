@@ -30,6 +30,9 @@
 \newcommand{\UL}{\mathrm{UL}}
 
 \input{data/reserve_summary.tex}
+\input{data/event_summary.tex}
+\input{data/tail_summary.tex}
+\input{data/horizon_summary.tex}
 
 \title{Pricing Uncollateralized Microcredit on a Public Blockchain:\\Short Loans, Re-lending and a Locked First-Loss Reserve}
 \author{Claude Code\thanks{Claude Code is an AI agent made by Anthropic, working with the
@@ -56,8 +59,12 @@ For the reserve, we prove that lenders' cumulative return equals gross interest 
 the reserve's final balance. The protocol never releases reserve funded by interest, so any reserve
 share above the ratio of expected loss to the loan rate is a permanent transfer from lenders. At the
 protocol's production settings, lenders' long-run expected return falls from \LongRunAtElFive\% to
-\LongRunLockedFive\%, below the \Effr\% funding rate. A reserve share at or modestly above expected
-loss keeps most of lenders' return, and further protection is cheaper as external first-loss capital.
+\LongRunLockedFive\%, below the \Effr\% funding rate. A simulation of a 500-loan pool at the contract's
+own timing confirms the annual recursion behind these numbers from the fifth year on and shows that
+the first year, before the reserve has built, is riskier than it says. A reserve share at or modestly
+above expected loss keeps most of lenders' return, and further protection is cheaper as external
+first-loss capital. The quantiles are conditional on the Gaussian factor: a Student-$t$ factor at the
+same correlation roughly doubles the 99.9\% quantile.
 \end{abstract}
 
 \medskip
@@ -68,8 +75,8 @@ microcredit, decentralized finance.\quad \textbf{JEL:} G21, G23, G32.
 \section{Introduction}
 
 Lending protocols on public blockchains hold pooled deposits of stablecoins and lend them to
-borrowers \citep{gudgeon2020}. The deployed ones require collateral worth more than the loan
-\citep{leshner2019compound,aave2020}, so their credit risk is market risk on the collateral. This
+borrowers \citep{gudgeon2020}. The largest of them, Compound and Aave, require collateral worth more
+than the loan \citep{leshner2019compound,aave2020}, so their credit risk is market risk on the collateral. This
 paper studies a pool that lends without collateral, to borrowers who lack it, on credit lines granted
 by an issuer and on backing from other accounts \citep{conservedcredit2026}. Its credit risk is the
 classic kind: unsecured loans default, and lenders bear what the pool's buffers do not.
@@ -104,7 +111,16 @@ The contributions are the following.
   expected return is $u\bigl[a(1-f)-\max\{\EL,\,ar\}\bigr]$ for utilisation $u$, loan rate $a$, fee
   share $f$ and reserve share $r$. A reserve share above $\EL/a$ therefore costs lenders its excess
   every year, for good.
+\item \emph{An event-timed check} (Section~\ref{sec:event}). A simulation of pools of 100 to 5,000
+  loans at the contract's own timing, with interest arriving loan by loan and write-offs one late
+  period after default, confirms the annual recursion behind the reserve results from the fifth year
+  on, shows that the first year is riskier than the recursion says, and bounds the error of the
+  premium's combined re-lending and granularity approximation at a few percent, on the conservative
+  side.
 \end{itemize}
+The market equilibrium of the loan rate and the reserve share, when lenders and borrowers respond to
+them, is the subject of a companion paper \citep{lendingequilibrium2026}, which restates
+Theorem~\ref{thm:longrun} and builds on it; this paper is the canonical derivation of that result.
 
 The last result has a direct consequence for the protocol. Its production settings pair an 800
 basis-point premium with a reserve share of 65\%, chosen for a policy that released the reserve above
@@ -132,8 +148,8 @@ contract \citep{microcredit2026contract}.
     Term & Value and treatment \\
     \midrule
     Loan rate & $a=$ funding rate $+$ premium, fixed at origination; the funding rate is the
-      effective federal funds rate, 4.33\% when deployed. Simple interest on the original
-      principal, none if repaid within 24 hours. \\
+      effective federal funds rate, 4.33\% in the calibration and in the deployments to date. Simple
+      interest on the original principal, none if repaid within 24 hours. \\
     Term & 30 days by default (1 to 365 allowed), so $n=365/30\approx12.17$ loans per slot-year. \\
     Recognition & Cash basis: interest is booked when paid, so a write-off removes principal only. \\
     Default & A loan can be written off 30 days after its due date and can never be repaid
@@ -156,6 +172,16 @@ reserve inflow to it as credit it can borrow against, and to keep that credit fr
 it never releases interest-funded reserve \citep{conservedcredit2026}. This paper takes the rule as
 given and works out what it costs lenders.
 
+Three configurations of the contract exist, and the paper names them. The \emph{production} settings
+are the calibrated defaults of the production deployment script at commit \texttt{b725a85}: a premium
+of 800 basis points and a reserve share of 65\%. The \emph{deployed} settings are those of the live
+testnet deployment: a premium of 500 basis points and a share of 30\%. The development defaults differ
+again. ``Deployed premium'' below means 500 basis points and ``production settings'' the first pair.
+On 6 October 2026, after the pinned commit, the production script's default share became an interim
+45\% (contract commit \texttt{1812e7d}), pending review of this paper and of the companion paper on the
+market equilibrium \citep{lendingequilibrium2026}; Corollary~\ref{cor:production} describes the 65\% of
+the pinned commit, and Remark~\ref{rem:interim} the interim value.
+
 % ---------------------------------------------------------------------------------------------
 \section{Default Horizons}\label{sec:horizon}
 
@@ -164,28 +190,46 @@ for the annual probability that a borrower who keeps rolling such loans defaults
 horizon of the Basel framework \citep{bcbs2006}.
 
 \begin{proposition}[Horizons]\label{prop:horizon}
-Suppose that, conditional on the systematic factor, each of a borrower's successive loans defaults
-with the same probability, independently of earlier loans. Then
+Fix the systematic factor $Z$ for the year and suppose that, given $Z$, each of a borrower's
+successive loans defaults with the same probability $p_T(Z)$, independently of earlier loans. Then
+the conditional annual probability of default is
 \[
-  \mathrm{PD}=1-(1-p_T)^{n},\qquad n=365/T,
+  \mathrm{PD}(Z)=1-\bigl(1-p_T(Z)\bigr)^{n},\qquad n=365/T,
 \]
-the default time is exponential with hazard $\lambda=-\ln(1-\mathrm{PD})$, and if every defaulter is
-replaced at once, the expected number of defaults per exposure-year, $n\,p_T$, satisfies
-$\mathrm{PD}\le n\,p_T\le\lambda$ and increases with $n$.
+the number of loans completed before default is geometric, and if every defaulter is replaced at
+once the expected number of defaults per exposure-year given $Z$ is $n\,p_T(Z)$, which satisfies
+$\mathrm{PD}(Z)\le n\,p_T(Z)\le\lambda(Z)$ with $\lambda(Z)=-\ln(1-\mathrm{PD}(Z))$ and increases with $n$.
 \end{proposition}
 
 \begin{proof}
-The borrower survives the year if it survives $n$ independent loans. With $x=\lambda/n$,
+Given $Z$, the borrower survives the year if it survives $n$ independent loans, and the count of
+completed loans before the first default is geometric. With $x=\lambda/n$,
 $n\,p_T=n(1-e^{-\lambda/n})=\lambda(1-e^{-x})/x$. The function $(1-e^{-x})/x$ decreases in $x>0$
 from 1, so $n\,p_T$ increases in $n$, equals PD at $n=1$ and tends to $\lambda$ as $n\to\infty$.
 \end{proof}
+
+\begin{remark}[Conditional, marginal and homogeneous conversions]\label{rem:marginal}
+The conversion holds given the factor. Unconditionally, $\mathrm{PD}=\E\bigl[1-(1-p_T(Z))^n\bigr]$,
+which is not $1-(1-\E\,p_T(Z))^n$: the function is concave in $p_T$, so the scalar conversion applied to
+the marginal per-loan rate overstates the annual PD. At an annual PD of 5\% and a correlation of 0.15 the
+marginal per-loan rate is \MarginalLoanPDHigh\% and the scalar conversion returns \ScalarReconversionHigh\%;
+at the Basel correlation the figures are \MarginalLoanPDBasel\% and \ScalarReconversionBasel\%, against
+\HomogeneousLoanPD\% per loan for a homogeneous hazard. Table~\ref{tab:horizon} is the homogeneous
+conversion, which is also the conditional one, and the pricing of Section~\ref{sec:pricing} uses
+conditional quantities throughout. The exponential default time of hazard $\lambda$ and the fractional
+cycle counts it allows are a continuous-hazard interpolation of the geometric count, adopted as a
+convention; nothing below depends on it beyond the value of $n$.
+\end{remark}
 
 The assumption ignores two effects of opposite sign. Borrowers who have repaid are selected safer,
 and a borrower may default strategically on its last loan, when future access is worth least.
 Neither can be estimated without data. Table~\ref{tab:horizon} gives the conversion. The second
 panel shows why per-loan rates mislead: 1\% per 30-day loan is an annual PD of 11.5\%, and a
-``97\% repayment rate'' is 31\%. Default rates of this size are within the range reported for
-microfinance institutions \citep{cull2009}, so the conversion matters for the scenarios below.
+``97\% repayment rate'' is 31\%. The conversion applies to a per-loan default rate with the same
+denominator, loans of term $T$ each counted as defaulted when written off; an institution's reported
+repayment rate has its own denominator, cohort and rollover rules, and the 31\% is an illustration of
+scale, not an estimate for any institution. Default rates of this size are within the range reported
+for microfinance institutions \citep{cull2009}, so the conversion matters for the scenarios below.
 
 \begin{table}[ht]
   \centering\small
@@ -315,6 +359,40 @@ one point of the lattice.
     PD & Loans $N$ & Asymptotic & With adjustment & Monte Carlo \\
     \midrule
     \inputrows{data/table_granularity.tex}
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Beyond the Gaussian factor}\label{sec:tail}
+
+The Gaussian factor is a choice, not a bound. In the $t$-copula alternative the latent variable is
+$\sqrt{W}\,(\sqrt{\rho}\,Z+\sqrt{1-\rho}\,\varepsilon_i)$ with $W=\nu/\chi^2_\nu$ independent of
+$(Z,\varepsilon)$, and the threshold is the $t_\nu$ quantile of PD, so the marginal PD and the linear
+correlation of the latent variables are unchanged while defaults share a tail factor
+\citep{frey2003,mcneil2015}. Conditional on $(W,Z)$ defaults are independent with probability
+$\Phi\bigl((t_\nu^{-1}(\mathrm{PD})/\sqrt W-\sqrt\rho\,Z)/\sqrt{1-\rho}\bigr)$, which is the loss rate
+of the infinitely granular pool. Table~\ref{tab:tail} gives its 99\% and 99.9\% quantiles by Monte Carlo
+(2,000,000 draws) against the Gaussian ones. At an annual PD of 5\% and the Basel correlation, 10
+degrees of freedom raise the 99.9\% quantile from \GaussQ\% to \TailTTenQ\%, a factor of
+\TailTTenRatio, and 5 degrees of freedom to \TailTFiveQ\%, a factor of \TailTFiveRatio; the mean is
+\TailTFiveMean\% in each, as it must be. The correlation sweep of Table~\ref{tab:rhogrid} does not reach
+these values. The paper's quantiles and premiums are therefore conditional on the Gaussian factor;
+Section~\ref{sec:limits} says so, and a pool with reason to expect a shared tail should price with a
+dependence assumption of its own.
+
+\begin{table}[ht]
+  \centering\small
+  \caption{Loss quantiles of the infinitely granular pool (LGD 100\%) with a Gaussian factor and with
+  a Student-$t$ factor of 5 and 10 degrees of freedom at the same linear correlation; the marginal PD
+  is the same in each column.}
+  \label{tab:tail}
+  \begin{tabular}{rlrrrrrr}
+    \toprule
+    & & \multicolumn{2}{c}{Gaussian} & \multicolumn{2}{c}{$t$, $\nu=5$} & \multicolumn{2}{c}{$t$, $\nu=10$} \\
+    \cmidrule(lr){3-4}\cmidrule(lr){5-6}\cmidrule(lr){7-8}
+    PD & $\rho$ & $L_{0.99}$ & $L_{0.999}$ & $L_{0.99}$ & $L_{0.999}$ & $L_{0.99}$ & $L_{0.999}$ \\
+    \midrule
+    \inputrows{data/table_tail.tex}
     \bottomrule
   \end{tabular}
 \end{table}
@@ -470,8 +548,9 @@ and lenders' long-run return is that of no reserve. Under the protocol's rule it
 \subsection{The locked reserve}
 
 \begin{theorem}[Long-run return under a lock]\label{thm:longrun}
-Suppose loss rates $L_t$ are independent across years with mean $\EL$ and finite variance, and the
-reserve is never released. Then lenders' average annual return converges almost surely:
+Suppose the loss rates $L_t$ are independent across years, take values in $[0,1]$ and have a common
+mean $\EL$, and the reserve is never released. Then lenders' average annual return converges almost
+surely:
 \[
   \frac{1}{T}\sum_{t=1}^T\mathrm{APY}_t\;\longrightarrow\;u\bigl[a(1-f)-\max\{\EL,\ a\,r\}\bigr].
 \]
@@ -479,11 +558,17 @@ reserve is never released. Then lenders' average annual return converges almost 
 
 \begin{proof}
 With $X_t=u\,a\,r-u\,L_t$, the balance follows the Lindley recursion $R_t=\max\{R_{t-1}+X_t,0\}$
-\citep{lindley1952}. Its drift is $\mu=\E X_t=u(a\,r-\EL)$. If $\mu>0$ the reflected random walk is
-transient and $R_T/T\to\mu$ almost surely; if $\mu\le0$ it is recurrent or null recurrent and
-$R_T/T\to0$ almost surely \citep[Chapter~III]{asmussen2003}. By the strong law,
-$T^{-1}\sum_tu\,L_t\to u\,\EL$. Dividing Theorem~\ref{thm:identity} by $T$ gives the limit
-$u\,a(1-f)-u\,\EL-\max\{\mu,0\}$, which is the claim.
+\citep{lindley1952}, with $R_0=0$. Let $S_t=\sum_{s\le t}X_s$ and $\mu=\E X_t=u(a\,r-\EL)$. Unrolling the
+recursion, $R_T=\max\{S_T,\ \max_{1\le j\le T}(S_T-S_j)\}=S_T-\min_{0\le j\le T}S_j$ with $S_0=0$. The
+$X_t$ are independent and bounded, so $\sum_t\mathrm{Var}(X_t)/t^2<\infty$ and Kolmogorov's strong law gives
+$S_n/n\to\mu$ almost surely \citep[Theorem~22.7]{billingsley1995}; the loss rates themselves give
+$T^{-1}\sum_tL_t\to\EL$ in the same way. If $\mu>0$, then almost surely $S_n\to\infty$, so $\min_jS_j$
+is finite and $R_T/T\to\mu$. If $\mu\le0$, fix $\epsilon>0$; almost surely $|S_n-n\mu|\le\epsilon n$ for
+all large $n$, so for large $T$ and every $j\le T$, $S_T-S_j\le(T-j)\mu+\epsilon(T+j)\le2\epsilon T$,
+and $0\le R_T\le2\epsilon T$ once $T$ is large; hence $R_T/T\to0$. In both cases $R_T/T\to\max\{\mu,0\}$.
+Dividing Theorem~\ref{thm:identity} by $T$ gives the limit $u\,a(1-f)-u\,\EL-\max\{\mu,0\}$, which is the
+claim. The argument uses only the strong law for the partial sums, so it covers any sequence of losses
+for which $S_n/n\to\mu$ and $T^{-1}\sum L_t\to\EL$ almost surely, such as a stationary ergodic one.
 \end{proof}
 
 A reserve share below $\EL/a$ leaves lenders' long-run return unchanged, because the reserve is
@@ -495,8 +580,14 @@ the rate at which lenders' yield is converted into borrowers' credit, a choice o
 of risk management.
 
 Figure~\ref{fig:years} and Table~\ref{tab:policy} simulate both policies at an annual PD of 5\%, with
-independent years, re-lent losses and 200,000 paths per case. Theorem~\ref{thm:identity} holds on every
-path to rounding error. At the production share of 65\%, the two policies give the same first year,
+independent years, re-lent losses and 200,000 paths per case. The simulation is an annual recursion,
+and its assumptions should be stated: deposits are constant, so losses are replenished by new deposits
+and the exposure $u$ per unit of deposits does not move; each year's inflow $u\,a\,r$ arrives before
+that year's loss $u\,L_t$ is paid; the loss rate is the conditional, infinitely granular, replenished
+rate of Proposition~\ref{prop:replenish}, so a defaulted slot is replaced at once; and years are
+independent. Section~\ref{sec:event} relaxes the timing, the instant replacement and the granularity
+in a finite pool and reports what changes. Theorem~\ref{thm:identity} holds on every path to rounding
+error. In the recursion, at the production share of 65\%, the two policies give the same first year,
 3.43\%, because the reserve is filling. By year 5 the policy with release pays lenders 5.93\% and the
 locked one 3.66\%, and after 30 years the locked reserve holds 73\% of deposits. At the expected-loss
 share of 42\%, the two policies stay within 0.2 percentage points of each other, and from year 5 on
@@ -557,25 +648,121 @@ Theorem~\ref{thm:longrun} with the values of Table~\ref{tab:recommendation} and 
 losses of Table~\ref{tab:losses}.
 \end{proof}
 
-Under the lock, a lender earns less than the funding rate in the long run at every scenario PD, so the
-pool would not attract deposits that have the funding rate as their alternative. Three remedies follow
-from the analysis. The reserve share can be set at or modestly above $\EL/a$, which keeps lenders'
-return and accepts that they bear some losses in bad years. Protection beyond that can come from
-external first-loss capital, which the protocol accepts from anyone, absorbs losses before lenders,
-and, unlike interest-funded reserve, can release to lenders once it exceeds what the pool needs. Or the
-premium can be raised to pay for the lock, which by Proposition~\ref{prop:pool} means adding the excess
-share $\max\{0,r-\EL/a\}$ of the loan rate to the costs the premium must cover.
+\begin{remark}[The interim default]\label{rem:interim}
+On 6 October 2026 the production script's default share became an interim 45\% (contract commit
+\texttt{1812e7d}), pending review; the pinned commit the corollary describes had 65\%, and the live
+testnet deployment keeps 30\%. At 45\% and an annual PD of 5\%, lenders' long-run return under the lock
+is \LongRunFortyFiveFive\%, above the funding rate and \LongRunAtElFive\% at expected loss, because 45\%
+is a few points above the expected-loss share of \RElFive\%.
+\end{remark}
+
+Under the lock at the pinned settings, a lender earns less than the funding rate in the long run at
+every scenario PD, so the pool would not attract deposits that have the funding rate as their
+alternative. Three remedies follow from the analysis. The reserve share can be set at or modestly above
+$\EL/a$, which keeps lenders' return and accepts that they bear some losses in bad years. Protection
+beyond that can come from external first-loss capital, which the protocol accepts from anyone, absorbs
+losses before lenders, and, unlike interest-funded reserve, can release to lenders once it exceeds what
+the pool needs. Or the premium can be raised to pay for the lock, which by Proposition~\ref{prop:pool}
+means adding the excess share $\max\{0,r-\EL/a\}$ of the loan rate to the costs the premium must cover.
+Which share and rate clear a market in which lenders and borrowers both respond is the question of the
+companion paper \citep{lendingequilibrium2026}, which finds a volume-maximising share a few points above
+$\EL/a$ under its scenarios.
+
+\subsection{An event-timed check in a finite pool}\label{sec:event}
+
+The recursion's assumptions matter most while the reserve forms, which is where its protection claims
+are strongest. To test them we simulate the pool at the contract's own timing
+\citep{microcredit2026contract}: $N$ slots of equal principal are lent in back-to-back loans of $365/12$
+days, so that each year holds twelve terms; at the end of a term a loan repays its principal with simple
+interest, of which the share $r$ goes to the reserve and the rest to lenders, or defaults; a defaulted
+loan is written off one late period later, when the reserve pays its principal first and lenders bear
+the rest, and only then is the slot re-lent; the systematic factor is fixed for the year, and the
+defaults among the active slots in a term are binomial with the conditional per-loan probability of
+Proposition~\ref{prop:horizon}. Deposits are constant at $N/u$, so exposure is replenished as in the
+recursion, and the write-offs of a term are paid before that term's interest arrives.
+Table~\ref{tab:event} reports \EventPaths\ paths for pools of 100, 500 and 5,000 loans at the two shares
+of Table~\ref{tab:policy}.
+
+Three things change and one does not. First, the first year is worse than the recursion says: at the
+production share, lenders bear some loss in \EventYearOneLossRec\% of paths with 500 loans and
+\EventYearOneLossRecHundred\% with 100, against \AnnualYearOneLossRec\% in the recursion, because the
+first defaults arrive before much interest has and because a small pool's losses are lumpy. Even so, the
+reserve pays \EventCoverRec\% of first-year write-offs with 500 loans (\EventCoverEl\% at the
+expected-loss share). Second, the gap narrows with time but does not close everywhere: at the
+production share the probability of a lender loss in year 10 is \EventYearTenLossRec\% against
+\AnnualYearTenLossRec\%, and the mean returns agree to within 0.05 points from year 5 on; at the
+expected-loss share, where the reserve hovers near empty, the event-timed loss probability stays above
+the recursion's (\EventYearTenLossEl\% against \AnnualYearTenLossEl\% in year 10), because within a year
+losses can arrive before the interest that would have covered them, while the mean returns agree to
+within 0.1 points. Third, the write-off
+delay idles a defaulted slot for one term, which lowers the mean loss rate slightly, from
+\ReplenishedEL\% to \EventMeanLossFiveHundred\%, and lowers the 99.9\% annual loss quantile below the
+replenished one. Table~\ref{tab:eventq} compares the event-timed quantile with the recommendation's
+combined approximation, the replenished quantile plus the static granularity adjustment: the
+approximation overstates the quantile by \CombinedErrFiveHundred\% at 500 loans and
+\CombinedErrHundred\% at 100, so it errs on the conservative side, by less than the differences between
+correlation assumptions in Table~\ref{tab:rhogrid}. What does not change is the long-run return:
+Theorem~\ref{thm:longrun} is a statement about the final balance, and the event-timed mean return in
+year 30 is \EventYearThirtyRetRec\% against \AnnualYearThirtyRetRec\% at the production share and
+\EventYearThirtyRetEl\% against \AnnualYearThirtyRetEl\% at expected loss.
+
+The check keeps deposits constant. A pool whose deposits fall with losses and withdrawals, so that
+exposure and the reserve's inflow shrink after a bad year, is the remaining difference between the
+recursion and the protocol, and it is not tested here; the recursion's results are conditional on it.
+
+\begin{table}[ht]
+  \centering\small
+  \caption{Event-timed simulation against the annual recursion at an annual PD of 5\% (Basel
+  correlation, loan rate 12.33\%, $u=85\%$, $f=0$, locked reserve): lenders' mean annual return and the
+  probability that they bear any loss in the year, for years 1, 5, 10 and 30, and the share of
+  first-year write-offs that the reserve paid.}
+  \label{tab:event}
+  \begin{tabular}{lrrrrrrrrrr}
+    \toprule
+    & & \multicolumn{2}{c}{Year 1} & \multicolumn{2}{c}{Year 5} & \multicolumn{2}{c}{Year 10} & \multicolumn{2}{c}{Year 30} & Reserve \\
+    \cmidrule(lr){3-4}\cmidrule(lr){5-6}\cmidrule(lr){7-8}\cmidrule(lr){9-10}
+    Share and model & $N$ & Return & Loss & Return & Loss & Return & Loss & Return & Loss & paid, yr 1 \\
+    \midrule
+    \inputrows{data/table_event_timed.tex}
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{table}[ht]
+  \centering\small
+  \caption{The annual loss rate per unit of exposure in the event-timed pool (years 2 to 30 pooled)
+  against the approximation used for the premium: mean loss; the 99.9\% quantile, event-timed; the
+  replenished quantile of Proposition~\ref{prop:replenish} plus the granularity adjustment; and the
+  approximation's error relative to the event-timed value.}
+  \label{tab:eventq}
+  \begin{tabular}{rrrrr}
+    \toprule
+    $N$ & mean loss & 99.9\%, event-timed & replenished $+$ GA & error \\
+    \midrule
+    \inputrows{data/table_event_quantile.tex}
+    \bottomrule
+  \end{tabular}
+\end{table}
 
 % ---------------------------------------------------------------------------------------------
 \section{Limitations}\label{sec:limits}
 
 \begin{enumerate}
-\item One Gaussian factor. A fat-tailed factor or several factors (region, cohort, crypto-asset
-  markets) would fatten the tails; the quantiles here are lower bounds for a given correlation.
+\item One Gaussian factor. The quantiles are those of the Gaussian one-factor model at the stated
+  correlation, and they are not bounds: correlation does not order all upper-tail quantiles across
+  dependence structures. Adding independent Gaussian factors with the same total latent covariance
+  leaves the distribution unchanged, while a factor with a heavier tail moves the far quantiles by
+  much more than the correlation sweep of Table~\ref{tab:rhogrid} does; with a Student-$t$ factor at the
+  same linear correlation the 99.9\% quantile is \TailTTenRatio\ to \TailTFiveRatio\ times the Gaussian
+  one (Section~\ref{sec:tail}). The premiums of Section~\ref{sec:pricing} are conditional on the
+  Gaussian factor, and a pool whose borrowers share a tail risk needs a dependence assumption of its own.
 \item PD and correlation are scenarios. The Basel retail correlation comes from bank books; the grid up
   to 0.30 brackets more concentrated pools.
 \item Independent years in the reserve simulation. Credit cycles are serially correlated, which makes
   long runs of losses, and so lender losses under a reserve at $\EL/a$, more likely than shown.
+\item Constant deposits in the reserve simulation. Losses and withdrawals are replenished by new
+  deposits, so exposure and the reserve's inflow never shrink; Section~\ref{sec:event} tests the
+  recursion's timing, replacement and granularity assumptions in a finite pool but keeps this one.
 \item A constant hazard across a borrower's loans, with no seasoning and no strategic default on the
   last loan.
 \item Deterministic LGD, with no time value on the 60 days between disbursement and write-off.

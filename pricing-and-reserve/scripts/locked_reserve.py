@@ -119,6 +119,8 @@ def main() -> None:
         macros[f"LongRunLocked{key}"] = f"{100 * U * (apr * (1 - FEE) - max(el, apr * RECOMMENDED_R[pd])):.2f}"
         macros[f"LongRunAtEl{key}"] = f"{100 * U * (apr * (1 - FEE) - el):.2f}"
         macros[f"RRec{key}"] = f"{100 * RECOMMENDED_R[pd]:.0f}"
+        # The interim production default of 45% (contract commit 1812e7d, 6 October 2026).
+        macros[f"LongRunFortyFive{key}"] = f"{100 * U * (apr * (1 - FEE) - max(el, apr * 0.45)):.2f}"
     macros["Effr"] = f"{100 * EFFR:.2f}"
 
     def write(name, rows):
