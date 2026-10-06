@@ -572,9 +572,12 @@ recursion, $R_T=\max\{S_T,\ \max_{1\le j\le T}(S_T-S_j)\}=S_T-\min_{0\le j\le T}
 $X_t$ are independent and bounded, so $\sum_t\mathrm{Var}(X_t)/t^2<\infty$ and Kolmogorov's strong law gives
 $S_n/n\to\mu$ almost surely \citep[Theorem~22.7]{billingsley1995}; the loss rates themselves give
 $T^{-1}\sum_tL_t\to\EL$ in the same way. If $\mu>0$, then almost surely $S_n\to\infty$, so $\min_jS_j$
-is finite and $R_T/T\to\mu$. If $\mu\le0$, fix $\epsilon>0$; almost surely $|S_n-n\mu|\le\epsilon n$ for
-all large $n$, so for large $T$ and every $j\le T$, $S_T-S_j\le(T-j)\mu+\epsilon(T+j)\le2\epsilon T$,
-and $0\le R_T\le2\epsilon T$ once $T$ is large; hence $R_T/T\to0$. In both cases $R_T/T\to\max\{\mu,0\}$.
+is finite and $R_T/T\to\mu$. If $\mu\le0$, fix $\epsilon>0$; almost surely there is $N$ with
+$|S_n-n\mu|\le\epsilon n$ for all $n\ge N$. For $T\ge j\ge N$,
+$S_T-S_j\le(T-j)\mu+\epsilon(T+j)\le2\epsilon T$; for $j<N\le T$, $S_T-S_j\le\epsilon T+T\mu+|S_j|\le
+\epsilon T+C$ with $C=\max_{j<N}|S_j|$, which is finite. So $0\le R_T\le2\epsilon T+C$ for $T\ge N$,
+$\limsup_T R_T/T\le2\epsilon$, and since $\epsilon$ is arbitrary, $R_T/T\to0$. In both cases
+$R_T/T\to\max\{\mu,0\}$.
 Dividing Theorem~\ref{thm:identity} by $T$ gives the limit $u\,a(1-f)-u\,\EL-\max\{\mu,0\}$, which is the
 claim. The argument uses only the strong law for the partial sums, so it covers any sequence of losses
 for which $S_n/n\to\mu$ and $T^{-1}\sum L_t\to\EL$ almost surely, such as a stationary ergodic one.
