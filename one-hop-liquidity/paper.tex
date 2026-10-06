@@ -209,11 +209,13 @@ which gives the bound $g\,c$; under one-hop, only a holder's own credit can cros
 For (a), the regimes named are maximum flows on explicit networks (one-hop and two-hop on layered
 networks, unbounded and path-liable on the node-split network), so the max-flow min-cut theorem
 \citep{ford1956} applies. For (b), the $k$-hop value is the optimum of a linear programme over paths
-of at most $k$ arcs with shared arc capacities across positions, which is not an ordinary flow;
-by linear-programming duality its value equals the optimum of the dual, whose feasible solutions
-are arc lengths under which every path of at most $k$ arcs from a holder to the sink has length at
-least one. Assigning length one to each attack edge and zero elsewhere is dual-feasible, which
-gives $g\,c$ again.
+of at most $k$ arcs, with the arc capacities $c$ shared across positions and each holder's supply
+capped by its free credit, which is not an ordinary flow. By linear-programming duality its value
+equals the optimum of the dual, which has a length $y_e\ge0$ per arc and a price $z_h\ge0$ per
+holder's supply cap, minimises $\sum_e c\,y_e+\sum_h\varphi(h)\,z_h$, and requires every path of at
+most $k$ arcs from a holder $h$ to the sink to satisfy $z_h+\sum_{e\in\text{path}}y_e\ge1$.
+Assigning length one to each attack edge, zero to every other arc and zero to every price is
+dual-feasible, which gives $g\,c$ again.
 \end{proof}
 
 The distinction in (b) is not a technicality. On a path of five nodes with credit 100 at the first,
@@ -312,7 +314,14 @@ sequences: the between-graph standard deviation of the success rate is at most \
 the ratio of the two-hop to the one-hop rate lies between \TwoHopRatioMin\ and \TwoHopRatioMax\
 across the graphs. The fresh-network figures of Table~\ref{tab:fresh} pool 600 borrowers from three
 graphs and should be read as clustered within those graphs; standard errors computed as if the
-borrowers were independent understate the uncertainty between networks.
+borrowers were independent understate the uncertainty between networks. Graph 0 is the graph and
+request sequence of Table~\ref{tab:steady}, and the script checks that it reproduces that table's
+rates: exactly for the flow regimes, and to a tolerance of five thousandths for the three-hop
+regime, which is a linear programme whose choice among routes of equal length can differ between
+solver versions by a few thousandths; the difference is recorded in
+\texttt{data/steady\_replicates.csv} rather than aborting the run, and the versions that produced
+the committed data (Python, NumPy, SciPy and NetworkX) in
+\texttt{data/replicates\_environment.txt}.
 
 \begin{table}[ht]
   \centering\small
@@ -373,25 +382,27 @@ multiple is 2.1 for two hops, 3.1 for three and 3.8 for unbounded routing.
 
 The second experiment (Table~\ref{tab:line}) holds the graph, the holders, the borrowers and the
 request sequence fixed at the base point and scales every holder's line and every trust line
-together, so that a full line keeps backing four neighbours. Scaling the line alone changes nothing
-under one hop, because a neighbour backs at most the trust per edge. With both scaled, one hop's
-success rises from \OneHopAtBase\ at the base point to \OneHopAtDouble\ at twice the credit, where a
-single neighbour can fund a whole request, and to \OneHopAtQuadruple\ at four times, still short of
-the two-hop rate of \TargetTwo\ at the base point. For the same borrowers and the same demand, one
-hop needs more than four times the credit to match two hops, so the holder-share multiple
-understates the price of the one-hop rule for a fixed cohort; the figures in the abstract are the
-holder-share ones and are labelled as such.
+together, so that a full line keeps backing four neighbours. Scaling the line alone changes almost
+nothing under one hop (\OneHopAtBase\ at the base point, \OneHopLineOnlyDouble\ at twice the line and
+\OneHopLineOnlyQuadruple\ at four times, with the trust per edge fixed), because a neighbour backs at
+most the trust per edge; the small gain comes from the few moments at which a holder's concurrent
+commitments exhaust its free line. With both scaled, one hop's success rises from \OneHopAtBase\ to
+\OneHopAtDouble\ at twice the credit, where a single neighbour can fund a whole request, and to
+\OneHopAtQuadruple\ at four times, still short of the two-hop rate of \TargetTwo\ at the base point.
+For the same borrowers and the same demand, one hop needs more than four times the credit to match
+two hops, so the holder-share multiple understates the price of the one-hop rule for a fixed cohort;
+the figures in the abstract are the holder-share ones and are labelled as such.
 
 \begin{table}[ht]
   \centering\small
   \caption{Fixed-cohort equivalence: one-hop steady-state success at the base point when every
-  holder's line $L$ and the trust per edge $c$ are scaled together, on the same graph with the same
-  holders, borrowers and requests. The two-hop, three-hop and unbounded rates at the base point are
-  \TargetTwo, \TargetThree\ and \TargetUnb.}
+  holder's line $L$ and the trust per edge $c$ are scaled together, and when only the line is
+  scaled, on the same graph with the same holders, borrowers and requests. The two-hop, three-hop
+  and unbounded rates at the base point are \TargetTwo, \TargetThree\ and \TargetUnb.}
   \label{tab:line}
-  \begin{tabular}{rrrr}
+  \begin{tabular}{rrrrr}
     \toprule
-    Multiple & $L$ & $c$ & One-hop success \\
+    Multiple & $L$ & $c$ & One-hop, both scaled & One-hop, line only \\
     \midrule
     \inputrows{data/table_equivalence_line.tex}
     \bottomrule

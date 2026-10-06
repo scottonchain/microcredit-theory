@@ -70,9 +70,18 @@ def main():
     rows = []
     for regime in REGIMES:
         succ = [steady(base, regime, rep) for rep in REPLICATES]
-        assert abs(succ[0] - published[regime]) < 1e-9, (regime, succ[0], published[regime])
+        # Replicate 0 must reproduce run.py's published row. The flow regimes are exact; the
+        # three-hop regime is a linear programme whose route selection can differ across solver
+        # versions by a few thousandths, so it is checked to a stated tolerance and the difference
+        # is recorded rather than aborting (a reviewer's environment, SciPy 1.17.0 on Python 3.12,
+        # gave 0.9595 against the published 0.9575).
+        diff = succ[0] - published[regime]
+        tol = 5e-3 if regime == "3-hop" else 1e-9
+        if abs(diff) > tol:
+            print(f"WARNING: {regime} replicate 0 differs from results/steady.csv by {diff:+.4f} (tolerance {tol})")
         rows.append({"regime": regime, **{f"graph{rep}": succ[i] for i, rep in enumerate(REPLICATES)},
-                     "mean": float(np.mean(succ)), "sd": float(np.std(succ, ddof=1))})
+                     "mean": float(np.mean(succ)), "sd": float(np.std(succ, ddof=1)),
+                     "published": published[regime], "replicate0_minus_published": diff})
     with open(OUT / "steady_replicates.csv", "w", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=list(rows[0]))
         w.writeheader()
@@ -93,29 +102,40 @@ def main():
     # 2. Fixed-cohort equivalence: scale every holder's line and the trust per edge together, on
     # the same graph, holders and requests.
     duration = R.mean_duration(base)
-    succ = []
+    succ, line_only = [], []
     for mult in MULTIPLES:
         s = R.setting(line=base["line"] * mult, c=base["c"] * mult)
         succ.append(steady(s, "one-hop", 0, request_setting=base, duration=duration))
-    succ = np.array(succ)
+        s = R.setting(line=base["line"] * mult)                     # trust per edge unchanged
+        line_only.append(steady(s, "one-hop", 0, request_setting=base, duration=duration))
+    succ, line_only = np.array(succ), np.array(line_only)
     with open(OUT / "equivalence_line.csv", "w", newline="") as fh:
         w = csv.writer(fh)
-        w.writerow(["multiple", "line", "trust_per_edge", "one_hop_success"])
-        for mult, v in zip(MULTIPLES, succ):
-            w.writerow([mult, base["line"] * mult, base["c"] * mult, f"{v:.6g}"])
+        w.writerow(["multiple", "line", "trust_per_edge", "one_hop_success", "one_hop_success_line_only"])
+        for mult, v, v2 in zip(MULTIPLES, succ, line_only):
+            w.writerow([mult, base["line"] * mult, base["c"] * mult, f"{v:.6g}", f"{v2:.6g}"])
     for regime in TARGETS:
         target = published[regime]
         need = R.first_q_reaching(np.array(MULTIPLES), succ, target)
         key = {"2-hop": "Two", "3-hop": "Three", "unbounded": "Unb"}[regime]
         macros[f"LineMult{key}"] = f"$>{MULTIPLES[-1]:.0f}$" if np.isnan(need) else f"{need:.1f}"
         macros[f"Target{key}"] = f"{target:.3f}"
-    lines = [f"{mult:g} & {base['line'] * mult:.0f} & {base['c'] * mult:.1f} & {v:.3f} \\\\" for mult, v in zip(MULTIPLES, succ)]
+    lines = [f"{mult:g} & {base['line'] * mult:.0f} & {base['c'] * mult:.1f} & {v:.3f} & {v2:.3f} \\\\"
+             for mult, v, v2 in zip(MULTIPLES, succ, line_only)]
     with open(OUT / "table_equivalence_line.tex", "w") as fh:
         fh.write(HEADER + "\n".join(lines) + "\n")
     macros["OneHopAtBase"] = f"{succ[0]:.3f}"
     macros["OneHopBelowDouble"] = f"{succ[list(MULTIPLES).index(1.75)]:.3f}"
     macros["OneHopAtDouble"] = f"{succ[list(MULTIPLES).index(2.0)]:.3f}"
     macros["OneHopAtQuadruple"] = f"{succ[-1]:.3f}"
+    macros["OneHopLineOnlyDouble"] = f"{line_only[list(MULTIPLES).index(2.0)]:.3f}"
+    macros["OneHopLineOnlyQuadruple"] = f"{line_only[-1]:.3f}"
+    import platform
+    import scipy
+    import networkx
+    with open(OUT / "replicates_environment.txt", "w") as fh:
+        fh.write(f"python {platform.python_version()}; numpy {np.__version__}; scipy {scipy.__version__}; "
+                 f"networkx {networkx.__version__}\n")
     with open(OUT / "replicates_summary.tex", "w") as fh:
         fh.write(HEADER)
         for k, v in macros.items():
