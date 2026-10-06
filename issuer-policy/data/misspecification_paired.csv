@@ -1,0 +1,21 @@
+world,comparison,sample,delta,delta_lo,delta_hi,cycles,clusters
+as assumed,weighted minus unweighted,common panel,7.037412737497128e-07,-5.889138348232973e-07,2.2860365243053843e-06,36798,1800
+as assumed,weighted minus unweighted,matched policy sample,1.960603813753251e-07,-2.3514923803978823e-07,6.6500160819627e-07,32382,1800
+as assumed,weighted minus tier only,common panel,-2.0366018895840827e-06,-3.841477046472812e-06,-4.6658680462481004e-07,36798,1800
+as assumed,weighted minus tier only,matched policy sample,-6.092176939093149e-07,-1.5450203365824316e-06,2.3201394280918082e-07,32750,1800
+riskier population,weighted minus unweighted,common panel,2.2922676379680723e-07,-1.3285380317104316e-06,2.009950088576613e-06,36798,1800
+riskier population,weighted minus unweighted,matched policy sample,-5.709486270649246e-07,-1.132916217704014e-06,-6.10211637976451e-09,31007,1800
+riskier population,weighted minus tier only,common panel,-2.4215725480940734e-06,-4.597310761014228e-06,-3.554473878630602e-07,36798,1800
+riskier population,weighted minus tier only,matched policy sample,4.5569647052465426e-07,-6.647582794428816e-07,1.4580511636644245e-06,31532,1800
+lateness halved,weighted minus unweighted,common panel,1.2398883893352737e-06,2.3452456376943472e-08,2.7309958543829065e-06,36798,1800
+lateness halved,weighted minus unweighted,matched policy sample,2.2029046579556144e-07,-2.0733295699900945e-07,6.134333104194915e-07,33351,1800
+lateness halved,weighted minus tier only,common panel,-1.2894988474244836e-06,-2.6221474604768686e-06,-4.877736244165208e-08,36798,1800
+lateness halved,weighted minus tier only,matched policy sample,-3.206952261612688e-07,-9.864481195590843e-07,3.4046679463192967e-07,33554,1800
+lateness doubled,weighted minus unweighted,common panel,1.4782560252896399e-06,-6.053865378771749e-07,3.817698875409466e-06,36798,1800
+lateness doubled,weighted minus unweighted,matched policy sample,3.3058037673435123e-07,-1.0057700502149057e-07,7.806492540428029e-07,30482,1800
+lateness doubled,weighted minus tier only,common panel,-3.161838359291871e-06,-5.456564635084624e-06,-1.0447377533893605e-06,36798,1800
+lateness doubled,weighted minus tier only,matched policy sample,-1.3076416996311161e-06,-2.5839267248502376e-06,-2.3933970082597094e-07,31187,1800
+"risk doubles, month 12",weighted minus unweighted,common panel,5.989769559628149e-07,-1.094004411952133e-06,2.504309608965314e-06,36798,1800
+"risk doubles, month 12",weighted minus unweighted,matched policy sample,-1.1363782363429165e-06,-1.733690731677662e-06,-5.494533939641118e-07,31892,1800
+"risk doubles, month 12",weighted minus tier only,common panel,-3.7243607932379826e-06,-6.345119974003526e-06,-1.2647157170388416e-06,36798,1800
+"risk doubles, month 12",weighted minus tier only,matched policy sample,1.7684462235269803e-08,-1.5066141220722905e-06,1.4573679677225195e-06,32255,1800

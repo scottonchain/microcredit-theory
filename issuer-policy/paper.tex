@@ -51,9 +51,10 @@ land even if an adversary releases held budget first. In a 24-month simulation t
 all 925 reports, predicted default rates matched realised ones in every decile of the world the
 prior was fitted to, lines grew for low-risk borrowers and shrank for high-risk ones, and attackers
 buying identities lost money in every tier unless identities cost far less than the issuer assumed.
-Under misspecified worlds the weights do not predict better than the tier prior at this horizon;
-their contribution is to close the routes to evidence that cost nothing, which an unweighted rule
-leaves open.
+Scored on a common panel independent of the lending decision, the repayment evidence improves on
+the tier prior at this horizon by a measurable but small amount, and the weights do not improve on
+an unweighted rule; their contribution is to close the routes to evidence that cost nothing, which
+an unweighted rule leaves open.
 \end{abstract}
 
 \begin{keyword}
@@ -464,51 +465,108 @@ stays within about 20\% of the model's expectation.
 \paragraph{Validation under misspecification} The calibration above is measured in the world the
 prior was fitted to, with lateness generated at the ratio the policy assumes; it shows that the
 machinery is coherent there, not that the evidence weights predict better or resist a world that
-differs. Table~\ref{tab:misspec} runs three scoring rules on the same borrower paths in five worlds,
-\MisspecHonest\ honest borrowers and \MisspecSeeds\ seeds each: the weights as proposed; an
-unweighted rule in which every repaid loan is one trial, good or bad, whatever it put at risk; and
-the tier prior alone. The worlds are the assumed one; a population with more of every tier at the
-high default probabilities than the prior assumes; lateness at half and at twice the assumed ratio
-to defaults; and a regime shift in which every borrower's default and late probabilities double from
-month 12. The scoring rules are compared by the Brier score of the predicted cycle default
-probability against the realised default, with a bootstrap interval that resamples borrowers rather
-than cycles, by its skill against the realised base rate, and by the ratio of realised to predicted
-defaults over all cycles, over months 12 to 23, and weighted by the line.
+differs. Tables~\ref{tab:misspec} and~\ref{tab:misspecpanel} run three scoring rules on the same
+borrower paths in five worlds, \MisspecHonest\ honest borrowers and \MisspecSeeds\ seeds each: the
+weights as proposed; an unweighted rule in which every repaid loan is one trial, good or bad,
+whatever it put at risk; and the tier prior alone. The worlds are the assumed one; a population with
+more of every tier at the high default probabilities than the prior assumes; lateness at half and at
+twice the assumed ratio to defaults; and a regime shift in which every borrower's default and late
+probabilities double from month 12. The scoring rules are compared by the Brier score of the
+predicted cycle default probability against the realised default, by its skill against the realised
+base rate, and by the ratio of realised to predicted defaults over all cycles, over months 12 to 23,
+and weighted by the line.
 
-Three findings. First, at a two-year horizon the weights do not improve prediction: the Brier score
-of the weighted rule (\BrierWeightedAssumed) is indistinguishable from the unweighted one
-(\BrierUnweightedAssumed) and little better than the prior alone (\BrierTierOnlyAssumed), and no rule
-has skill over the base rate, because a live account shows about fifteen trials against a prior
-worth fifty to ninety and defaults end the record. Second, misspecification degrades every rule
-alike: with the riskier population the realised-to-predicted ratio is \RatioWeightedRiskier\ under
-the weights and \RatioTierOnlyRiskier\ under the prior alone, and after the regime shift
-\RatioWeightedShift\ and \RatioTierOnlyShift; the evidence corrects a wrong prior only as fast as
-trials accumulate, and the ratio in months 12 to 23 under the shift (\RatioLateWeightedShift) shows
-how slowly. A wrong lateness ratio moves calibration by less (\RatioWeightedLateHalf\ and
-\RatioWeightedLateDouble). Third, the weights' contribution is elsewhere: the bought identity that
-runs the recycled-seed farm holds a line of \FarmLineUnweighted\ under the unweighted rule, the
-tier's cap, against \FarmLineWeighted\ under the weights, which is the line of a fresh identity with
-no history (Table~\ref{tab:misspeclines}); the unweighted rule also grants honest survivors larger
-lines (\MeanLineUnweightedAssumed\ against \MeanLineWeightedAssumed\ USDC at the last report),
-because it counts trials that risked nothing. The narrow claim of Section~\ref{sec:evidence} stands:
-selected zero-cost histories receive zero weight. The broader claims do not follow from this
-simulation: that manufactured history is worthless in general, or that risk-weighted repayments
-improve prediction. At this horizon the policy's accuracy is its prior's accuracy, and an issuer
-should expect to be as wrong as its prior is when the population or the hazard moves.
+Two evaluation samples are reported, because they estimate different things. The \emph{policy
+sample} (Table~\ref{tab:misspec}) is the cycles each rule's own policy lent, and its Brier score is
+the policy score: the accuracy of the predictions behind the loans that rule made. It mixes
+prediction with selection. The rule's lines decide who borrows, since a borrower whose available
+credit is below one USDC sits the month out, and a default ends the borrower's record under the rule
+that observed it, so the three rules score different cycles (\CyclesWeightedAssumed,
+\CyclesUnweightedAssumed\ and \CyclesTierOnlyAssumed\ in the assumed world). The \emph{common panel}
+(Table~\ref{tab:misspecpanel}) removes the selection: it is every (seed, borrower, month) in which
+the borrower would seek a loan, scored on the outcome that loan would have had, both drawn by the
+world before any rule acts (the simulation uses common random numbers), so the panel is the same
+\PanelCyclesAssumed\ cycles for every rule and does not depend on the lending decision. Each rule's
+prediction is its posterior for that borrower at that month, whether or not it lent: this scores the
+rule out of its own sample, on the borrowers it declined and on the months after a default it
+observed, where its posterior carries that default as evidence. Uncertainty is bootstrapped on one
+footing: the clusters are borrower paths, identified by (seed, borrower) and pooled across seeds
+(\MisspecClusters\ clusters), each world draws \MisspecBoot\ resamples of them with replacement, and
+the same resample serves every rule and both samples, so the intervals on the Brier scores, on the
+skill and on the paired differences between rules are comparable. The interval covers borrower
+sampling only; the state the rules share within a seed (the budget, the epochs, the farm) is not
+resampled.
+
+Three findings. First, at a two-year horizon the repayment evidence improves on the prior alone by
+a measurable but small amount, and the weights do not improve on the unweighted rule. On the common
+panel in the assumed world the weighted rule's Brier score minus the prior's is
+$\PanelDeltaTierOnlyAssumed\times10^{-6}$ (interval $[\PanelDeltaLoTierOnlyAssumed,
+\PanelDeltaHiTierOnlyAssumed]\times10^{-6}$, about one part in \PanelGainTierOnlyAssumed\ of the
+score), and the interval excludes zero in \PanelBetterThanTierOnly\ of the \MisspecWorlds\ worlds; its skill
+against the base rate is \PanelSkillWeightedAssumed\% (interval
+$[\PanelSkillLoWeightedAssumed,\PanelSkillHiWeightedAssumed]$\%) against \PanelSkillTierOnlyAssumed\%
+for the prior alone, whose interval includes zero. Against the unweighted rule the panel difference
+is $\PanelDeltaUnweightedAssumed\times10^{-6}$ (interval $[\PanelDeltaLoUnweightedAssumed,
+\PanelDeltaHiUnweightedAssumed]\times10^{-6}$), its interval includes zero in \PanelTiedWithUnweighted\
+of the \MisspecWorlds\ worlds, and the weighted rule scores better in \PanelWeightedBeatsUnweighted\
+of them. On the matched policy sample, the cycles both rules lent, the differences in the assumed
+world are $\MatchedDeltaUnweightedAssumed\times10^{-6}$ against the unweighted rule and
+$\MatchedDeltaTierOnlyAssumed\times10^{-6}$ against the prior alone, both intervals including zero
+(\MatchedCyclesUnweightedAssumed\ and \MatchedCyclesTierOnlyAssumed\ matched cycles). The gain is
+small because a live account shows about fifteen trials
+against a prior worth fifty to ninety and defaults end the record. Second, misspecification degrades
+every rule alike: with the riskier population the realised-to-predicted ratio is
+\RatioWeightedRiskier\ under the weights and \RatioTierOnlyRiskier\ under the prior alone, and after
+the regime shift \RatioWeightedShift\ and \RatioTierOnlyShift; the evidence corrects a wrong prior
+only as fast as trials accumulate, and the ratio in months 12 to 23 under the shift
+(\RatioLateWeightedShift) shows how slowly. A wrong lateness ratio moves calibration by less
+(\RatioWeightedLateHalf\ and \RatioWeightedLateDouble). Third, the weights' contribution is
+elsewhere: the bought identity that runs the recycled-seed farm holds a line of \FarmLineUnweighted\
+under the unweighted rule, the tier's cap, against \FarmLineWeighted\ under the weights, which is the
+line of a fresh identity with no history (Table~\ref{tab:misspeclines}); the unweighted rule also
+grants honest survivors larger lines (\MeanLineUnweightedAssumed\ against \MeanLineWeightedAssumed\
+USDC at the last report), because it counts trials that risked nothing. The narrow claim of
+Section~\ref{sec:evidence} stands: selected zero-cost histories receive zero weight. The broader
+claims do not follow from this simulation: that manufactured history is worthless in general, or
+that risk-weighted repayments improve prediction. At this horizon the policy's accuracy is nearly
+its prior's accuracy, and an issuer should expect to be as wrong as its prior is when the population
+or the hazard moves. What the panel does not validate: engineered histories with a small positive
+cost, proper scores that weight by exposure, and the outcome-dependent weights of
+Section~\ref{sec:evidence}, which the panel scores but does not correct for.
 
 \begin{table}[ht]
   \centering\small
-  \caption{Three scoring rules in five worlds (\MisspecHonest\ honest borrowers, mean of \MisspecSeeds\
-  seeds). Brier score of the predicted cycle default probability ($\times100$) with a 95\% cluster
-  bootstrap interval over borrowers; skill against the realised base rate; ratio of realised to
-  predicted defaults over all cycles, over months 12 to 23, and weighted by the line.}
+  \caption{The policy sample: three scoring rules in five worlds (\MisspecHonest\ honest borrowers,
+  \MisspecSeeds\ seeds pooled), each scored on the cycles its own policy lent. Number of cycles;
+  Brier score of the predicted cycle default probability against the realised default ($\times100$)
+  with a 95\% cluster bootstrap interval over the \MisspecClusters\ borrower paths; skill against the
+  realised base rate; ratio of realised to predicted defaults over all cycles, over months 12 to 23,
+  and weighted by the line.}
   \label{tab:misspec}
-  \footnotesize\setlength{\tabcolsep}{4pt}
-  \begin{tabular}{llrrrrr}
+  \footnotesize\setlength{\tabcolsep}{3.5pt}
+  \begin{tabular}{llrrrrrr}
     \toprule
-    World & Scoring & Brier $\times100$ [95\%] & Skill & Ratio & Months 12--23 & Line-weighted \\
+    World & Scoring & Cycles & Brier $\times100$ [95\%] & Skill & Ratio & Months 12--23 & Line-wtd \\
     \midrule
     \inputrows{data/table_misspecification.tex}
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{table}[ht]
+  \centering\small
+  \caption{The common panel: the same rules scored on every cycle a borrower would have sought
+  (\PanelCyclesAssumed\ per world, the same for every rule), on the outcome that loan would have had.
+  Brier score ($\times100$) with its 95\% cluster bootstrap interval; skill against the base rate;
+  and the paired difference of the weighted rule's Brier score from this rule's on the same
+  resamples ($\times10^{6}$; negative favours the weighted rule).}
+  \label{tab:misspecpanel}
+  \footnotesize\setlength{\tabcolsep}{4pt}
+  \begin{tabular}{llrrr}
+    \toprule
+    World & Scoring & Brier $\times100$ [95\%] & Skill & Weighted $-$ this, $\times10^{6}$ [95\%] \\
+    \midrule
+    \inputrows{data/table_misspecification_panel.tex}
     \bottomrule
   \end{tabular}
 \end{table}
@@ -572,8 +630,9 @@ number of identities. The loss on issued lines stays below $n\,\mathrm{cap}_t$ i
 \item \emph{The prior and the late ratio carry the accuracy.} The calibration of Section~\ref{sec:sim}
   is measured in the population the prior is fitted to, with lateness at the assumed ratio; under a
   riskier population or a regime shift every scoring rule, the weighted one included, is wrong by
-  the same factor, and at a two-year horizon the evidence weights add no predictive skill over the
-  prior (Table~\ref{tab:misspec}). Fractional likelihood weights define a power posterior, not a
+  the same factor, and at a two-year horizon the evidence adds little predictive skill over the
+  prior and the weights none over an unweighted rule (Tables~\ref{tab:misspec}
+  and~\ref{tab:misspecpanel}). Fractional likelihood weights define a power posterior, not a
   calibrated posterior for the observation process; survivorship (defaults end the record),
   selective lending and outcome-dependent weights are not corrected for.
 \item \emph{Exponential demand and full drawdown at default} are modelling choices that give a concave

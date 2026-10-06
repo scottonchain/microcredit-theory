@@ -20,7 +20,7 @@ Budget.** Working paper, prepared for the European Journal of Operational Resear
 | Proposition 3 | Greedy allocation within the budget and the per-report cap is optimal (a laminar matroid) |
 | Lemma 2 | A release front-run cannot make a correctly planned report revert |
 | Section 7 | 925 reports accepted; calibration in every decile of the assumed world; attackers lose in every tier at the true identity cost |
-| Misspecification tables | At a two-year horizon the evidence weights do not predict better than the tier prior, and every scoring rule is wrong by the same factor when the population or the hazard moves; the weights close the zero-cost routes (farm line 6.10 against 15.00 unweighted) |
+| Misspecification tables | On a common panel independent of the lending decision, the repayment evidence improves on the tier prior by a measurable but small amount at a two-year horizon and the weights do not improve on an unweighted rule; every scoring rule is wrong by the same factor when the population or the hazard moves; the weights close the zero-cost routes (farm line 6.10 against 15.00 unweighted) |
 
 Revised on 6 October 2026 in response to the internal referee report (issue #6).
 
