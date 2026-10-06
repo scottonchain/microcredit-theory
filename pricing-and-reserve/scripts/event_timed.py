@@ -188,16 +188,19 @@ def main():
     # Largest absolute difference in mean return between the event-timed pool and the annual
     # recursion over years 5 to 30, per case and size, in percentage points; then the largest over
     # the pools of 500 loans or more and over the pools of 100 loans, both shares.
-    diffs = {}
+    diffs, years = {}, {}
     for c in cases:
         a = annual[c["case"]]
-        d = max(abs(c["mean_ret"][y - 1] - float(a[y]["mean_apy"])) for y in range(5, YEARS + 1))
-        diffs[(c["case"], c["n"])] = d
+        by_year = {y: abs(c["mean_ret"][y - 1] - float(a[y]["mean_apy"])) for y in range(5, YEARS + 1)}
+        y_max = max(by_year, key=by_year.get)
+        diffs[(c["case"], c["n"])], years[(c["case"], c["n"])] = by_year[y_max], y_max
         key = {100: "Hundred", 500: "FiveHundred", 5000: "FiveThousand"}[c["n"]]
-        macros[f"EventDiffMax{'Rec' if c['case'] == 'recommended' else 'El'}{key}"] = pct(d)
+        macros[f"EventDiffMax{'Rec' if c['case'] == 'recommended' else 'El'}{key}"] = pct(by_year[y_max])
     macros["EventDiffMaxFiveHundredPlus"] = pct(max(d for (case, n), d in diffs.items() if n >= 500))
     macros["EventDiffMaxHundred"] = pct(max(d for (case, n), d in diffs.items() if n == 100))
     macros["EventDiffMaxRecAll"] = pct(max(d for (case, n), d in diffs.items() if case == "recommended"))
+    macros["EventDiffYearMin"] = str(min(years.values()))      # the years in which the largest differences fall
+    macros["EventDiffYearMax"] = str(max(years.values()))
     with open(OUT / "event_summary.tex", "w") as fh:
         fh.write(HEADER)
         for k, v in macros.items():

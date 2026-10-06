@@ -59,11 +59,12 @@ For the reserve, we prove that lenders' cumulative return equals gross interest 
 the reserve's final balance. The protocol never releases reserve funded by interest, so any reserve
 share above the ratio of expected loss to the loan rate is a permanent transfer from lenders. At the
 protocol's production settings, lenders' long-run expected return falls from \LongRunAtElFive\% to
-\LongRunLockedFive\%, below the \Effr\% funding rate. A simulation of pools of 100 to 5,000 loans at
-the contract's own timing, with interest arriving loan by loan, agrees with the annual recursion
-behind these numbers to within \EventDiffMaxFiveHundredPlus\ percentage points in mean return from
-the fifth year on in pools of 500 loans or more (\EventDiffMaxHundred\ points with 100 loans), and
-shows that the first year, before the reserve has built, is riskier than the recursion says. A
+\LongRunLockedFive\%, below the \Effr\% funding rate. In a simulation of pools of 100 to 5,000 loans
+at the contract's own timing, with interest arriving loan by loan, the largest observed difference
+in mean return from the annual recursion behind these numbers, from the fifth year on, is
+\EventDiffMaxFiveHundredPlus\ percentage points in pools of 500 loans or more (\EventDiffMaxHundred\
+points with 100 loans), and the first year, before the reserve has built, is riskier than the
+recursion says. A
 reserve share at or modestly above expected loss keeps most of lenders' return; whether further
 protection is cheaper as external first-loss capital depends on the horizon and the hurdle rate,
 which the companion paper examines. The quantiles are conditional on the Gaussian factor: a
@@ -116,10 +117,11 @@ The contributions are the following.
   every year, for good.
 \item \emph{An event-timed check} (Section~\ref{sec:event}). A simulation of pools of 100 to 5,000
   loans at the contract's own timing, with interest arriving loan by loan and write-offs one late
-  period after default, agrees with the annual recursion behind the reserve results to within
-  \EventDiffMaxFiveHundredPlus\ percentage points in mean return from the fifth year on in pools of
-  500 loans or more (\EventDiffMaxHundred\ points with 100 loans), shows that the first year is
-  riskier than the recursion says, and finds the premium's combined re-lending and granularity approximation
+  period after default, differs from the annual recursion behind the reserve results by at most
+  \EventDiffMaxFiveHundredPlus\ percentage points of observed mean return from the fifth year on in
+  pools of 500 loans or more (\EventDiffMaxHundred\ points with 100 loans; the largest differences
+  observed, not bounds), shows that the first year is riskier than the recursion says, and finds
+  the premium's combined re-lending and granularity approximation
   a few percent above the simulated 99.9\% loss quantile at the three sizes tested, on the
   conservative side. It is a check of a specified replenished model at three sizes, not an error
   bound over parameters.
@@ -707,8 +709,9 @@ production share the probability of a lender loss in year 10 is \EventYearTenLos
 empty, the event-timed loss probability stays above the recursion's (\EventYearTenLossEl\% against
 \AnnualYearTenLossEl\% in year 10), because within a year losses can arrive before the interest that
 would have covered them, and the mean returns differ by at most \EventDiffMaxElFiveHundred\ points
-with 500 loans (\EventDiffMaxElHundred\ with 100 and \EventDiffMaxElFiveThousand\ with 5,000), the
-largest differences falling in year 5. Third, the write-off
+with 500 loans (\EventDiffMaxElHundred\ with 100 and \EventDiffMaxElFiveThousand\ with 5,000). These
+are the largest differences observed between simulated means, rounded to two decimals, not bounds,
+and they fall in years \EventDiffYearMin\ to \EventDiffYearMax. Third, the write-off
 delay idles a defaulted slot for one term, which lowers the mean loss rate slightly, from
 \ReplenishedEL\% to \EventMeanLossFiveHundred\%, and lowers the 99.9\% annual loss quantile below the
 replenished one. Table~\ref{tab:eventq} compares the event-timed quantile with the recommendation's
