@@ -4,14 +4,25 @@
 The reserve rule of Section 8 sizes the first-loss reserve from the 99% loss quantile of the whole
 pool. A quantile is not subadditive in general: with discrete losses, the quantile of a sum can
 exceed the sum of the quantiles, and with independent risks it can fall below it. This script
-measures both effects for finite pools in the paper's own model. Two cohorts A and B of n loans
-each, annual default probabilities (pA, pB), LGD 100%, one year, with the Basel other-retail
-correlation of each PD. Borrower i of cohort c defaults if sqrt(rho_c) Z_c + sqrt(1 - rho_c) e_i <
-Phi^{-1}(p_c). Three dependence structures: one common Gaussian factor Z_A = Z_B (the paper's model,
-Section 4); independent factors (two unrelated markets); and one common Student-t factor with
-nu = 10 (Section 7's alternative, same marginal PD). Losses are counted in defaulted loans, so the
-sum of cohort quantiles and the pooled quantile are directly comparable. Expected shortfall, which is
-subadditive, is reported next to the quantile.
+measures both effects for finite pools in the paper's own model, at the parameters it samples and
+nowhere else: the cells below are evidence for those parameters, not a pooling guarantee. Two
+cohorts A and B of n loans each, annual default probabilities (pA, pB), LGD 100%, one year, with the
+Basel other-retail correlation of each PD. Borrower i of cohort c defaults if
+sqrt(rho_c) Z_c + sqrt(1 - rho_c) e_i < Phi^{-1}(p_c). Three dependence structures: one common
+Gaussian factor Z_A = Z_B (the paper's model, Section 4); independent factors (two unrelated
+markets); and one common Student-t factor with nu = 10 (Section 7's alternative, same marginal PD).
+Losses are counted in defaulted loans, so the sum of cohort quantiles and the pooled quantile are
+directly comparable.
+
+Definitions. The q-quantile is the empirical inverse CDF, the smallest value whose CDF reaches q.
+The expected shortfall is ES_q = v + E[(X - v)^+] / (1 - q) with v that quantile (Rockafellar and
+Uryasev, 2000), which takes only the fraction of the atom at v that lies in the upper 1 - q tail and
+is therefore coherent; averaging every sample at or above v is not, since it takes the whole atom.
+The script checks both estimators against an exact two-point example before it runs: two
+independent Bernoulli(0.04) unit losses at q = 0.95 have quantile 0 and ES 0.8 each, and quantile 1
+and ES 1.032 for their sum, so the quantile fails subadditivity there and ES does not. That example
+has equal exposures: equal loan sizes alone do not exclude the failure, an atom of mass just below
+the cutoff does it, and concentrated exposure is one route to such an atom, not a necessary one.
 
 Usage: python3 scripts/pooling_subadditivity.py <path to microcredit-contract>
 
@@ -38,35 +49,71 @@ PD_PAIRS = ((0.05, 0.05), (0.05, 0.20), (0.01, 0.20))
 Q = 0.99
 
 
+def quantile_and_es(x, q):
+    """Empirical inverse-CDF q-quantile v and ES_q = v + E[(X - v)^+] / (1 - q)."""
+    v = float(np.quantile(x, q, method="inverted_cdf"))
+    es = v + float(np.maximum(x - v, 0.0).mean()) / (1.0 - q)
+    return v, es
+
+
+def exact_quantile_and_es(pmf, q):
+    """The same two definitions computed exactly from a probability mass function {value: mass}."""
+    cdf = 0.0
+    v = None
+    for value in sorted(pmf):
+        cdf += pmf[value]
+        if cdf >= q - 1e-15:
+            v = value
+            break
+    es = v + sum(mass * max(value - v, 0.0) for value, mass in pmf.items()) / (1.0 - q)
+    return float(v), float(es)
+
+
+def self_check():
+    """Two independent Bernoulli(0.04) unit losses at q = 0.95 (darthcripto's example, Moltbook post
+    a0048c8d, 2026-10-05): quantile 0 and ES 0.8 each, quantile 1 and ES 1.032 for the sum. Exact
+    values first, then the sampled estimators on two million draws."""
+    p, q = 0.04, 0.95
+    one = {0: 1 - p, 1: p}
+    two = {0: (1 - p) ** 2, 1: 2 * p * (1 - p), 2: p * p}
+    v1, e1 = exact_quantile_and_es(one, q)
+    v2, e2 = exact_quantile_and_es(two, q)
+    if not (v1 == 0.0 and abs(e1 - 0.8) < 1e-12 and v2 == 1.0 and abs(e2 - 1.032) < 1e-12):
+        sys.exit(f"exact self-check failed: {v1} {e1} {v2} {e2}")
+    rng = np.random.default_rng(np.random.SeedSequence([SEED, 1]))
+    x = rng.binomial(1, p, 2_000_000)
+    y = rng.binomial(1, p, 2_000_000)
+    sv, se = quantile_and_es(x, q)
+    tv, te = quantile_and_es(x + y, q)
+    if not (sv == 0.0 and abs(se - 0.8) < 0.01 and tv == 1.0 and abs(te - 1.032) < 0.01):
+        sys.exit(f"sampled self-check failed: {sv} {se} {tv} {te}")
+    return v1, e1, v2, e2, sv, se, tv, te
+
+
 def defaults(n, pd, rho, z, w, rng):
     """Defaulted loans in a cohort of n, conditional on the factor draws z (and tail factor w)."""
     if w is None:
-        threshold = norm.ppf(pd)
-        p = norm.cdf((threshold - np.sqrt(rho) * z) / np.sqrt(1 - rho))
+        p = norm.cdf((norm.ppf(pd) - np.sqrt(rho) * z) / np.sqrt(1 - rho))
     else:
         p = norm.cdf((student.ppf(pd, NU) / np.sqrt(w) - np.sqrt(rho) * z) / np.sqrt(1 - rho))
     return rng.binomial(n, p)
 
 
-def quantile_and_es(x, q):
-    xq = float(np.quantile(x, q))
-    tail = x[x >= xq]
-    return xq, float(tail.mean())
-
-
 def main():
     OUT.mkdir(exist_ok=True)
+    check = self_check()
+    print("self-check (exact, then sampled): quantile %.0f ES %.3f per loss; quantile %.0f ES %.3f for the sum; "
+          "sampled %.0f %.4f and %.0f %.4f" % check)
     rng = np.random.default_rng(np.random.SeedSequence([SEED, 11]))
     rows, lines, macros = [], [], {}
-    worst_ratio = 0.0
-    worst_label = ""
+    worst_ratio, worst_label = 0.0, ""
     for n in SIZES:
         for pa, pb in PD_PAIRS:
             ra, rb = float(vs.basel_other_retail_correlation(pa)), float(vs.basel_other_retail_correlation(pb))
             for structure in ("common", "independent", "t10"):
                 za = rng.standard_normal(PATHS)
                 zb = za if structure != "independent" else rng.standard_normal(PATHS)
-                w = nu_w = None
+                w = None
                 if structure == "t10":
                     w = NU / chi2.rvs(NU, size=PATHS, random_state=rng)
                 da = defaults(n, pa, ra, za, w, rng)
@@ -95,6 +142,8 @@ def main():
     macros["PoolMaxQRatio"] = f"{worst_ratio:.2f}"
     macros["PoolMaxESRatio"] = f"{max_es_ratio:.2f}"
     macros["PoolPaths"] = f"{PATHS:,}".replace(",", "{,}")
+    macros["PoolCheckESOne"] = f"{check[1]:.3f}"
+    macros["PoolCheckESSum"] = f"{check[3]:.3f}"
     with open(OUT / "pooling.csv", "w", newline="") as fh:
         writer = csv.DictWriter(fh, fieldnames=list(rows[0].keys()))
         writer.writeheader()
@@ -113,7 +162,7 @@ def main():
               f"{r['q99_a']:>5.0f} {r['q99_b']:>5.0f} {r['q99_pooled']:>6.0f} {r['ratio_q99']:>6.2f} "
               f"{r['es99_a']:>6.1f} {r['es99_b']:>6.1f} {r['es99_pooled']:>7.1f} {r['ratio_es99']:>6.2f}")
     print(f"largest pooled/sum quantile ratio with a shared factor: {worst_ratio:.2f} ({worst_label}); "
-          f"largest expected-shortfall ratio: {max_es_ratio:.2f}")
+          f"largest expected-shortfall ratio: {max_es_ratio:.2f}; sampled cells only, not a general guarantee")
 
 
 if __name__ == "__main__":
