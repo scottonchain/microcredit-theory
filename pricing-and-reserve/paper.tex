@@ -61,8 +61,9 @@ share above the ratio of expected loss to the loan rate is a permanent transfer 
 protocol's production settings, lenders' long-run expected return falls from \LongRunAtElFive\% to
 \LongRunLockedFive\%, below the \Effr\% funding rate. A simulation of pools of 100 to 5,000 loans at
 the contract's own timing, with interest arriving loan by loan, agrees with the annual recursion
-behind these numbers to within a few hundredths of a point in mean return from the fifth year on,
-and shows that the first year, before the reserve has built, is riskier than the recursion says. A
+behind these numbers to within \EventDiffMaxFiveHundredPlus\ percentage points in mean return from
+the fifth year on in pools of 500 loans or more (\EventDiffMaxHundred\ points with 100 loans), and
+shows that the first year, before the reserve has built, is riskier than the recursion says. A
 reserve share at or modestly above expected loss keeps most of lenders' return; whether further
 protection is cheaper as external first-loss capital depends on the horizon and the hurdle rate,
 which the companion paper examines. The quantiles are conditional on the Gaussian factor: a
@@ -115,9 +116,10 @@ The contributions are the following.
   every year, for good.
 \item \emph{An event-timed check} (Section~\ref{sec:event}). A simulation of pools of 100 to 5,000
   loans at the contract's own timing, with interest arriving loan by loan and write-offs one late
-  period after default, agrees with the annual recursion behind the reserve results to within a few
-  hundredths of a point in mean return from the fifth year on, shows that the first year is riskier
-  than the recursion says, and finds the premium's combined re-lending and granularity approximation
+  period after default, agrees with the annual recursion behind the reserve results to within
+  \EventDiffMaxFiveHundredPlus\ percentage points in mean return from the fifth year on in pools of
+  500 loans or more (\EventDiffMaxHundred\ points with 100 loans), shows that the first year is
+  riskier than the recursion says, and finds the premium's combined re-lending and granularity approximation
   a few percent above the simulated 99.9\% loss quantile at the three sizes tested, on the
   conservative side. It is a check of a specified replenished model at three sizes, not an error
   bound over parameters.
@@ -692,18 +694,21 @@ slots pay, not the recursion's deterministic $u\,a$ a year, so the model differs
 in its inflows as well as their timing. Table~\ref{tab:event} reports \EventPaths\ paths for pools of
 100, 500 and 5,000 loans at the two shares of Table~\ref{tab:policy}.
 
-Three things change and one does not. First, the first year is worse than the recursion says: at the
+Three things change. First, the first year is worse than the recursion says: at the
 production share, lenders bear some loss in \EventYearOneLossRec\% of paths with 500 loans and
 \EventYearOneLossRecHundred\% with 100, against \AnnualYearOneLossRec\% in the recursion, because the
 first defaults arrive before much interest has and because a small pool's losses are lumpy. Even so, the
 reserve pays \EventCoverRec\% of first-year write-offs with 500 loans (\EventCoverEl\% at the
 expected-loss share). Second, the gap narrows with time but does not close everywhere: at the
 production share the probability of a lender loss in year 10 is \EventYearTenLossRec\% against
-\AnnualYearTenLossRec\%, and the mean returns agree to within 0.05 points from year 5 on; at the
-expected-loss share, where the reserve hovers near empty, the event-timed loss probability stays above
-the recursion's (\EventYearTenLossEl\% against \AnnualYearTenLossEl\% in year 10), because within a year
-losses can arrive before the interest that would have covered them, while the mean returns agree to
-within 0.1 points. Third, the write-off
+\AnnualYearTenLossRec\%, and from year 5 on the mean returns differ by at most
+\EventDiffMaxRecFiveHundred\ points with 500 loans (\EventDiffMaxRecHundred\ with 100 and
+\EventDiffMaxRecFiveThousand\ with 5,000); at the expected-loss share, where the reserve hovers near
+empty, the event-timed loss probability stays above the recursion's (\EventYearTenLossEl\% against
+\AnnualYearTenLossEl\% in year 10), because within a year losses can arrive before the interest that
+would have covered them, and the mean returns differ by at most \EventDiffMaxElFiveHundred\ points
+with 500 loans (\EventDiffMaxElHundred\ with 100 and \EventDiffMaxElFiveThousand\ with 5,000), the
+largest differences falling in year 5. Third, the write-off
 delay idles a defaulted slot for one term, which lowers the mean loss rate slightly, from
 \ReplenishedEL\% to \EventMeanLossFiveHundred\%, and lowers the 99.9\% annual loss quantile below the
 replenished one. Table~\ref{tab:eventq} compares the event-timed quantile with the recommendation's

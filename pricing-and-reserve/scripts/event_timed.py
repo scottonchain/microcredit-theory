@@ -185,6 +185,19 @@ def main():
     macros["EventYearThirtyRetEl"] = pct(el500["mean_ret"][29])
     macros["AnnualYearThirtyRetEl"] = pct(a_el[30]["mean_apy"])
     macros["EventPaths"] = f"{PATHS:,}".replace(",", "{,}")
+    # Largest absolute difference in mean return between the event-timed pool and the annual
+    # recursion over years 5 to 30, per case and size, in percentage points; then the largest over
+    # the pools of 500 loans or more and over the pools of 100 loans, both shares.
+    diffs = {}
+    for c in cases:
+        a = annual[c["case"]]
+        d = max(abs(c["mean_ret"][y - 1] - float(a[y]["mean_apy"])) for y in range(5, YEARS + 1))
+        diffs[(c["case"], c["n"])] = d
+        key = {100: "Hundred", 500: "FiveHundred", 5000: "FiveThousand"}[c["n"]]
+        macros[f"EventDiffMax{'Rec' if c['case'] == 'recommended' else 'El'}{key}"] = pct(d)
+    macros["EventDiffMaxFiveHundredPlus"] = pct(max(d for (case, n), d in diffs.items() if n >= 500))
+    macros["EventDiffMaxHundred"] = pct(max(d for (case, n), d in diffs.items() if n == 100))
+    macros["EventDiffMaxRecAll"] = pct(max(d for (case, n), d in diffs.items() if case == "recommended"))
     with open(OUT / "event_summary.tex", "w") as fh:
         fh.write(HEADER)
         for k, v in macros.items():
