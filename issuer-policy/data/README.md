@@ -12,6 +12,8 @@ them by hand.
 | `calibration.csv`, `calibration_summary.tex` | Figure 2 and the calibration figures quoted in the text |
 | `table_budget.tex` | Table 4: issuer outcomes against the budget |
 | `table_attack.tex`, `attacker_curves.csv` | Table 5 and Figure 3: identity buyers by tier |
+| `table_objective.tex`, `objective_summary.tex` | The surrogate objective against the cash-flow objective at each tier's prior (Section 5) |
+| `misspecification.csv`, `table_misspecification.tex`, `table_misspecification_lines.tex`, `misspecification_summary.tex` | Three scoring rules in five worlds (`scripts/misspecification.py`, Section 7) |
 
 The experiments seed every draw from a fixed base seed, and two consecutive runs gave byte-identical
 results; the rerun before this paper differed only in the runtime line of the summary.

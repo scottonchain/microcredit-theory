@@ -17,6 +17,8 @@
 \makeatother
 
 \input{data/calibration_summary.tex}
+\input{data/objective_summary.tex}
+\input{data/misspecification_summary.tex}
 
 \journal{European Journal of Operational Research}
 
@@ -39,15 +41,19 @@ budget on the sum of lines, charged on each account's highest line since the lin
 and a cap on how much one report may add. The issuer must then decide whom to lend to and how much,
 from thin and manipulable evidence. We give a policy that does so in four steps. Only accounts with
 a costly identity are eligible, and a tier's cap never exceeds the cost of a fraudulent identity in
-it, which makes buying identities unprofitable whatever the attacker does. Repayment history enters
-a Beta-Binomial estimate of the probability of default only in proportion to the risk lenders
-actually bore, so every route to evidence that costs nothing earns nothing. Each line maximises
-expected profit under exponential demand, at $\mu\ln(i/p)$. Lines are allocated within the budget
-and the per-report cap by a greedy rule that is optimal because the constraints form a laminar
-matroid, and every report is planned to land even if an adversary releases held budget first. In a
-24-month simulation the contract accepted all 925 reports, predicted default rates matched realised
-ones in every decile, lines grew for low-risk borrowers and shrank for high-risk ones, and attackers
+it, which bounds the profit from buying identities by their cost, outside two channels the analysis
+names. Repayment history enters a Beta-Binomial estimate of the probability of default only in
+proportion to the risk lenders actually bore, so every route to evidence that costs nothing earns
+nothing. Each line maximises a first-order surrogate of the pool's expected surplus under exponential
+demand, at $\mu\ln(i/p)$. Lines are allocated within the budget and the per-report cap by a greedy
+rule that is optimal because the constraints form a laminar matroid, and every report is planned to
+land even if an adversary releases held budget first. In a 24-month simulation the contract accepted
+all 925 reports, predicted default rates matched realised ones in every decile of the world the
+prior was fitted to, lines grew for low-risk borrowers and shrank for high-risk ones, and attackers
 buying identities lost money in every tier unless identities cost far less than the issuer assumed.
+Under misspecified worlds the weights do not predict better than the tier prior at this horizon;
+their contribution is to close the routes to evidence that cost nothing, which an unweighted rule
+leaves open.
 \end{abstract}
 
 \begin{keyword}
@@ -123,7 +129,11 @@ exactly what Sybil accounts can manipulate \citep{cheng2005sybilproof}.
 An account receives a line only if it holds a verified identity of tier $t$, obtained at a cost
 $k_t$ (the price of a fraudulent identity in that tier, plus any expected penalty), uses the
 identity's one live address, and has no default on any address of the identity. Everything else
-receives zero.
+receives zero. The lifetime constraint is on the identity, not the address: in the implementation an
+identity is bound to one address for life and cannot move, so the address's record is the identity's
+record. If a later version lets an identity rotate to a new address, the credit charged to the old
+address as a backer and its default flag must carry over with its repayment history; one live address
+at a time is not by itself the lifetime invariant that Lemma~\ref{lem:lifetime} needs.
 
 \begin{lemma}[Lifetime loss per account]\label{lem:lifetime}
 For any account $a$ and any sequence of operations, the losses lenders bear that are attributable to
@@ -143,32 +153,52 @@ loss, the claim follows.
 \end{proof}
 
 \begin{proposition}[Incentive compatibility]\label{prop:ic}
-Suppose an attacker buys $n_t$ identities in each tier $t$ at cost $k_t$, then follows any strategy,
-possibly also holding a share $s$ of the pool as a lender. Its net profit is at most
+Let an attacker buy $n_t$ identities in each tier $t$ at cost $k_t$ and then follow any strategy,
+possibly holding a share $s$ of the pool's shares throughout as a lender. Measure its
+\emph{deviation profit} as its final liquid wealth less its initial wealth, less what the same
+initial wealth would have earned as a passive lender holding the same share $s$ over the same
+period; identities and accounts it abandons are worth nothing to it. Then its deviation profit is at
+most
 \[
-  \sum_t n_t\bigl(\min\{\mathrm{cap}_t,M\}-k_t\bigr)\;+\;I\bigl(r-1+s(1-f-r)\bigr)\;+\;H,
+  \sum_t n_t\bigl(\min\{\mathrm{cap}_t,M\}-k_t\bigr)\;+\;I\bigl(r-1+s(1-f-r)\bigr)\;+\;s\,r\,I\,\mathbb{1}_{\mathrm{stress}}\;+\;H,
 \]
 where $I$ is the interest its accounts paid, $r$ and $f$ the reserve and fee shares of interest,
-and $H$ the backing honest accounts committed to it. If $\mathrm{cap}_t\le k_t$ in every tier, the
-first two terms are at most zero.
+$\mathbb{1}_{\mathrm{stress}}$ indicates that other borrowers' defaults consumed its dues from the
+pooled reserve before it withdrew, and $H$ is the backing that honest accounts committed to it and
+lost. If $\mathrm{cap}_t\le k_t$ in every tier, the first term is at most zero. The second is at most
+$-fI\le0$. The third is at most $s\,r\,I$, and the second and third together are positive only if
+$s>(1-r)/(1-f)$. The last is the honest backers' own loss, which no issuer rule controls.
 \end{proposition}
 
 \begin{proof}
 By Lemma~\ref{lem:lifetime}, each identity yields at most its highest line, which the policy keeps
 at or below $\min\{\mathrm{cap}_t,M\}$, plus its dues $d=rI$ in total. The attacker paid $k_t$ per
-identity and interest $I$, and recovers through its shares at most $s(1-f-r)I$
-\citep[Proposition~7.4]{conservedcredit2026}. The second term is at most $I(r-1+1-f-r)=-fI\le0$.
-Honest backing is the honest backers' own risk, charged to their credit.
+identity and interest $I$. Relative to the passive lender, it recovers through its shares at most
+$s(1-f-r)I$ of that interest \citep[Proposition~7.4]{conservedcredit2026}, which gives the second
+term; and if other borrowers' defaults consume its dues from the pooled reserve before it withdraws,
+those dues absorb losses that would otherwise have lowered the value of its shares, which adds at
+most $s\,rI$ \citep[Proposition~7.5]{conservedcredit2026}. Honest backing is the honest backers' own
+risk, charged to their credit.
 \end{proof}
 
-Under the condition, a profit-seeking attacker gains nothing from any number of identities through
-any history; this is the identity-cost form of the result of \citet{friedman2001cheap} that, with
-cheap pseudonyms, newcomers must pay dues, and it is why identities issued once per person matter
-\citep{borge2017personhood}. An attacker that does not seek profit can still cost lenders up to
-$\sum_tn_t\,\mathrm{cap}_t$, which under the condition is at most what it spent on identities, and
-at any moment at most $MB$ on all of the issuer's lines. Table~\ref{tab:tiers} lists the tiers used
-below; their costs are illustrative inputs, which an issuer must set from the market price of
-identities and revisit.
+The benchmark matters. Against total wealth, ordinary returns on passive lending would enter, and
+the statement would be about the pool's yield rather than about identities; against passive lending,
+the proposition says that buying identities, with any history, adds nothing to what the attacker
+would have earned anyway, outside two channels it names. The first, the pooled reserve under stress,
+is the channel of \citet[Proposition~7.5]{conservedcredit2026}: it pays only an agent that holds more
+than $(1-r)/(1-f)$ of the pool, 70\% at the deployed reserve share of 30\% and no fee, and a run on a
+copy of the deployed contract found an agent holding 91\% of the pool ending $0.49$ ahead of a
+passive lender at $I=2.33$, as the formula predicts. The second, honest backing, is a loss that
+honest backers choose to risk. So the proposition is not a claim that no deviation is ever
+profitable; it is a bound on the profit from identities, and a statement of where any other profit
+must come from. Under the condition, and outside those channels, a profit-seeking attacker gains
+nothing from any number of identities through any history; this is the identity-cost form of the
+result of \citet{friedman2001cheap} that, with cheap pseudonyms, newcomers must pay dues, and it is
+why identities issued once per person matter \citep{borge2017personhood}. An attacker that does not
+seek profit can still cost lenders up to $\sum_tn_t\,\mathrm{cap}_t$, which under the condition is at
+most what it spent on identities, and at any moment at most $MB$ on all of the issuer's lines.
+Table~\ref{tab:tiers} lists the tiers used below; their costs are illustrative inputs, which an issuer
+must set from the market price of identities and revisit.
 
 \begin{table}[ht]
   \centering\small
@@ -254,6 +284,42 @@ when it is always drawn; so lines are rationed below demand, as in models of cre
 \citep{stiglitz1981rationing}. The policy's target is $\min\{\ell^*,\mathrm{cap}_t\}$, and an account
 with an overdue loan gets zero at once.
 
+\paragraph{What the objective is} $\Pi$ is a first-order surrogate, and its economic interpretation
+should be stated. Normal demand is specified conditional on not defaulting, and a borrower that
+defaults draws the whole line and pays no premium that cycle, so the cash-flow objective per cycle
+on a line, premium income less principal loss, is
+\[
+  \tilde\Pi(\ell)=(1-p)\,i\,\mu\bigl(1-e^{-\ell/\mu}\bigr)-p\,\ell,
+\]
+strictly concave with optimum $\mu\ln\bigl((1-p)\,i/p\bigr)$, lower than $\ell^*$ by $\mu\ln(1-p)$.
+Table~\ref{tab:objective} gives the difference at each tier's prior: at most \LineShiftMaxAbs\ USDC,
+or \LineShiftMaxRel\% of the line, in the basic tier, where the line is smallest, and within the
+one-unit allocation step in the other two. The funding rate on a defaulted balance over the late
+period, fees, utilisation and the reserve's share add further terms, which separate the pool's gross
+loan surplus from lenders' net return. Whose objective it is also needs saying: the issuer does not
+lend. $\Pi$ is the pool's expected gross surplus per cycle on the line, which lenders and the
+first-loss reserve share in the proportions $1-r$ and $r$ of interest; the issuer maximises it as the
+pool's agent. It is not lenders' net return, and the companion pricing paper
+\citep{pricingreserve2026} shows lenders earning less than the funding rate at the reserve share of
+65\% used in the simulation below, because the reserve withholds part of the surplus. The two
+statements coexist: a positive surplus does not ensure that lenders earn their alternative return,
+and the choice of reserve share is the pricing paper's subject, not this one's.
+
+\begin{table}[ht]
+  \centering\small
+  \caption{The surrogate objective against the cash-flow objective at each tier's prior PD per
+  cycle ($\mu=\DemandMean$, $i=\PremiumPerCycle\%$ per cycle): the optimal line under each (USDC)
+  and the difference.}
+  \label{tab:objective}
+  \begin{tabular}{lrrrrr}
+    \toprule
+    Tier & $p$ per cycle & $\mu\ln(i/p)$ & $\mu\ln((1-p)i/p)$ & difference & relative \\
+    \midrule
+    \inputrows{data/table_objective.tex}
+    \bottomrule
+  \end{tabular}
+\end{table}
+
 % ---------------------------------------------------------------------------------------------
 \section{Allocation within the Budget}\label{sec:allocation}
 
@@ -311,7 +377,9 @@ if either would revert.
 \section{Simulation}\label{sec:sim}
 
 \paragraph{World} 24 monthly reports, maximum line 100, loan rate 12.33\% (a funding rate of 4.33\%
-and a premium of 800 basis points), reserve share 65\%. Honest verified borrowers are 40\% basic,
+and a premium of 800 basis points), reserve share 65\%: the production deployment script's defaults
+at the pinned contract commit, where the share has since become an interim 45\% (6 October 2026);
+the live testnet deployment uses 500 basis points and 30\%. Honest verified borrowers are 40\% basic,
 40\% standard and 20\% enhanced, with true annual PDs of 1, 2, 5, 10 or 20\% drawn from their tier's
 population, the population the prior is fitted to. Each cycle they borrow with probability 0.85,
 default with the cycle PD after drawing their whole limit, repay late with twice that probability,
@@ -393,6 +461,73 @@ stays within about 20\% of the model's expectation.
   \end{tabular}
 \end{table}
 
+\paragraph{Validation under misspecification} The calibration above is measured in the world the
+prior was fitted to, with lateness generated at the ratio the policy assumes; it shows that the
+machinery is coherent there, not that the evidence weights predict better or resist a world that
+differs. Table~\ref{tab:misspec} runs three scoring rules on the same borrower paths in five worlds,
+\MisspecHonest\ honest borrowers and \MisspecSeeds\ seeds each: the weights as proposed; an
+unweighted rule in which every repaid loan is one trial, good or bad, whatever it put at risk; and
+the tier prior alone. The worlds are the assumed one; a population with more of every tier at the
+high default probabilities than the prior assumes; lateness at half and at twice the assumed ratio
+to defaults; and a regime shift in which every borrower's default and late probabilities double from
+month 12. The scoring rules are compared by the Brier score of the predicted cycle default
+probability against the realised default, with a bootstrap interval that resamples borrowers rather
+than cycles, by its skill against the realised base rate, and by the ratio of realised to predicted
+defaults over all cycles, over months 12 to 23, and weighted by the line.
+
+Three findings. First, at a two-year horizon the weights do not improve prediction: the Brier score
+of the weighted rule (\BrierWeightedAssumed) is indistinguishable from the unweighted one
+(\BrierUnweightedAssumed) and little better than the prior alone (\BrierTierOnlyAssumed), and no rule
+has skill over the base rate, because a live account shows about fifteen trials against a prior
+worth fifty to ninety and defaults end the record. Second, misspecification degrades every rule
+alike: with the riskier population the realised-to-predicted ratio is \RatioWeightedRiskier\ under
+the weights and \RatioTierOnlyRiskier\ under the prior alone, and after the regime shift
+\RatioWeightedShift\ and \RatioTierOnlyShift; the evidence corrects a wrong prior only as fast as
+trials accumulate, and the ratio in months 12 to 23 under the shift (\RatioLateWeightedShift) shows
+how slowly. A wrong lateness ratio moves calibration by less (\RatioWeightedLateHalf\ and
+\RatioWeightedLateDouble). Third, the weights' contribution is elsewhere: the bought identity that
+runs the recycled-seed farm holds a line of \FarmLineUnweighted\ under the unweighted rule, the
+tier's cap, against \FarmLineWeighted\ under the weights, which is the line of a fresh identity with
+no history (Table~\ref{tab:misspeclines}); the unweighted rule also grants honest survivors larger
+lines (\MeanLineUnweightedAssumed\ against \MeanLineWeightedAssumed\ USDC at the last report),
+because it counts trials that risked nothing. The narrow claim of Section~\ref{sec:evidence} stands:
+selected zero-cost histories receive zero weight. The broader claims do not follow from this
+simulation: that manufactured history is worthless in general, or that risk-weighted repayments
+improve prediction. At this horizon the policy's accuracy is its prior's accuracy, and an issuer
+should expect to be as wrong as its prior is when the population or the hazard moves.
+
+\begin{table}[ht]
+  \centering\small
+  \caption{Three scoring rules in five worlds (\MisspecHonest\ honest borrowers, mean of \MisspecSeeds\
+  seeds). Brier score of the predicted cycle default probability ($\times100$) with a 95\% cluster
+  bootstrap interval over borrowers; skill against the realised base rate; ratio of realised to
+  predicted defaults over all cycles, over months 12 to 23, and weighted by the line.}
+  \label{tab:misspec}
+  \footnotesize\setlength{\tabcolsep}{4pt}
+  \begin{tabular}{llrrrrr}
+    \toprule
+    World & Scoring & Brier $\times100$ [95\%] & Skill & Ratio & Months 12--23 & Line-weighted \\
+    \midrule
+    \inputrows{data/table_misspecification.tex}
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{table}[ht]
+  \centering\small
+  \caption{The same runs: honest loss per exposure-year, mean line of surviving honest borrowers at
+  the last report (USDC), and the line held at the end by a bought basic identity that runs the
+  recycled-seed farm (USDC; the fresh-identity line is 6.10 and the tier's cap 15).}
+  \label{tab:misspeclines}
+  \begin{tabular}{llrrr}
+    \toprule
+    World & Scoring & Loss rate & Mean line & Farm line \\
+    \midrule
+    \inputrows{data/table_misspecification_lines.tex}
+    \bottomrule
+  \end{tabular}
+\end{table}
+
 \paragraph{Attackers} Identity buyers' best strategy is to build history for 22 or 23 months and
 then draw everything. Table~\ref{tab:attack} and Figure~\ref{fig:attack} compare two worlds that differ
 only in the true price of an identity. When caps respect Proposition~\ref{prop:ic}, profit is negative
@@ -434,8 +569,13 @@ number of identities. The loss on issued lines stays below $n\,\mathrm{cap}_t$ i
   After 24 months an active borrower has about 15 trials of evidence against a prior worth 57 to 94,
   so lines discriminate by tier more than by individual risk. A real issuer adds off-chain data, which
   this policy admits only through the tier and its prior.
-\item \emph{The prior and the late ratio are assumed right.} The simulation draws honest risk from the
-  population the prior is fitted to and generates lateness with the assumed ratio.
+\item \emph{The prior and the late ratio carry the accuracy.} The calibration of Section~\ref{sec:sim}
+  is measured in the population the prior is fitted to, with lateness at the assumed ratio; under a
+  riskier population or a regime shift every scoring rule, the weighted one included, is wrong by
+  the same factor, and at a two-year horizon the evidence weights add no predictive skill over the
+  prior (Table~\ref{tab:misspec}). Fractional likelihood weights define a power posterior, not a
+  calibrated posterior for the observation process; survivorship (defaults end the record),
+  selective lending and outcome-dependent weights are not corrected for.
 \item \emph{Exponential demand and full drawdown at default} are modelling choices that give a concave
   profit and a closed-form line.
 \item \emph{Not modelled:} staleness of scores, the pool's liquidity limits and provisioning, and the
@@ -446,10 +586,12 @@ number of identities. The loss on issued lines stays below $n\,\mathrm{cap}_t$ i
 
 An issuer of credit lines to pseudonymous borrowers can be made safe for lenders by the contract and
 useful to borrowers by its policy. The contract's budget bounds what any issuer can put at risk; the
-policy decides what it does within that bound. Caps no larger than the cost of an identity make
-identity fraud unprofitable, evidence weighted by risk borne makes manufactured history worthless,
-and a greedy allocation over a laminar matroid spends the budget optimally and survives front-running.
-The binding input is the price of an identity, which the issuer must measure rather than assume.
+policy decides what it does within that bound. Caps no larger than the cost of an identity bound the
+profit from identity fraud by its cost, evidence weighted by risk borne closes the routes to evidence
+that cost nothing, and a greedy allocation over a laminar matroid spends the budget optimally and
+survives front-running. What the policy does not do, at a two-year horizon, is predict individual
+default better than its prior; its accuracy is the prior's, and the binding inputs are the price of
+an identity and the base rates of the population, which the issuer must measure rather than assume.
 
 \paragraph{Disclosure of AI authorship} This paper was written by Claude Code, an AI agent made by
 Anthropic, working with the project's human operator, who set the research direction. The policy and

@@ -7,6 +7,7 @@ b725a85 of https://github.com/scottonchain/microcredit-contract, and writes data
 Usage: python3 scripts/extract_issuer_policy.py <path to microcredit-contract>
 """
 import csv
+import math
 import pathlib
 import sys
 
@@ -38,8 +39,41 @@ def write_csv(name, header, data):
         w.writerows(data)
 
 
+def objective_table() -> None:
+    """The surrogate objective of Proposition 2 against the cash-flow objective
+    (1 - p) i mu (1 - e^{-l/mu}) - p l, whose optimum is mu ln((1 - p) i / p), at each tier's
+    prior PD per cycle (Section 5)."""
+    sys.path.insert(0, str(CONTRACT / "analysis/issuer_policy"))
+    import policy as pol  # noqa: E402
+    params = pol.PolicyParams()
+    mu, i = params.demand_mean, params.premium_per_cycle
+    lines, macros = [], {}
+    worst_abs = worst_rel = 0.0
+    for r in rows("tiers.csv"):
+        p = pol.cycle_pd(float(r["prior_annual_pd"]))
+        surrogate = mu * math.log(i / p) if p < i else 0.0
+        exact = mu * math.log((1 - p) * i / p) if (1 - p) * i > p else 0.0
+        shift = exact - surrogate
+        rel = shift / surrogate if surrogate > 0 else 0.0
+        worst_abs, worst_rel = max(worst_abs, abs(shift)), max(worst_rel, abs(rel))
+        lines.append(f"{r['tier']} & {100 * p:.2f}\\% & {surrogate:.2f} & {exact:.2f} & {shift:+.2f} & {100 * rel:+.1f}\\%")
+        key = {"basic": "Basic", "standard": "Standard", "enhanced": "Enhanced"}[r["tier"]]
+        macros[f"LineShift{key}"] = f"{shift:+.2f}"
+        macros[f"LineShiftRel{key}"] = f"{100 * rel:+.1f}"
+    write_tex("table_objective.tex", lines)
+    macros["LineShiftMaxAbs"] = f"{worst_abs:.2f}"
+    macros["LineShiftMaxRel"] = f"{100 * worst_rel:.1f}"
+    macros["PremiumPerCycle"] = f"{100 * i:.3f}"
+    macros["DemandMean"] = f"{mu:.0f}"
+    with open(OUT / "objective_summary.tex", "w") as fh:
+        fh.write(HEADER)
+        for k, v in macros.items():
+            fh.write(f"\\newcommand{{\\{k}}}{{{v}}}\n")
+
+
 def main() -> None:
     OUT.mkdir(exist_ok=True)
+    objective_table()
 
     lines = []
     for r in rows("tiers.csv"):
