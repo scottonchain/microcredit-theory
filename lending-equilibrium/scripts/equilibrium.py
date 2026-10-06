@@ -327,10 +327,14 @@ def section_c():
     # mean return over the first H years (and u a (r - R_C) a year in the long run); the seed is a
     # gift that its funder never recovers, so its cost is the annuity that repays it at the hurdle
     # rate over H years.
-    ann = {E: E / (1 - (1 + E) ** (-H)), 0.15: 0.15 / (1 - 1.15 ** (-H))}
+    # Both costs are levelised with the same discount factors: the seed as the annuity that repays
+    # it over H years at the hurdle h, k / A(h), and the share as the discounted sum of the yearly
+    # differences in expected return divided by the same A(h), where A(h) = sum_t (1+h)^-t.
+    disc = {E: (1 + E) ** -np.arange(1, H + 1), 0.15: 1.15 ** -np.arange(1, H + 1)}
+    ann = {h: 1.0 / disc[h].sum() for h in disc}
     put("AnnuityAtE", f"{ann[E]:.3f}")
     put("AnnuityAtFifteen", f"{ann[0.15]:.3f}")
-    mean_rc = float(np.interp(R_C, [x["r"] for x in rows], [x["mean_k0"] for x in rows])) / 100
+    path_rc = lender_paths(lm, R_C, A_REF, 0.0, H)[0].mean(axis=1)   # expected return by year at R_C
     lines = []
     for r in (0.45, 0.50, 0.55, 0.60, 0.65):
         target = p_at(r, 0.0)
@@ -341,24 +345,25 @@ def section_c():
                 found = float(k)
                 break
         share_cost = U * A_REF * (r - R_C)            # yearly, per unit of deposits, lenders' yield forgone
-        mean_r = float(np.interp(r, [x["r"] for x in rows], [x["mean_k0"] for x in rows])) / 100
-        share_cost_ten = mean_rc - mean_r             # yearly over the first H years
-        seed_cost_e = None if found is None else found * ann[E]
-        seed_cost_h = None if found is None else found * ann[0.15]
+        delta = path_rc - lender_paths(lm, r, A_REF, 0.0, H)[0].mean(axis=1)   # yearly cost over the first H years
+        share_ten = {h: float(delta @ disc[h] / disc[h].sum()) for h in disc}  # levelised at the hurdle
+        seed_cost = {h: (None if found is None else found * ann[h]) for h in disc}
         lines.append(
             f"{100 * r:.0f} & {pct(target, 1)} & " +
             ("--" if found is None else f"{100 * found:.2f}") + " & " + pct(share_cost) + " & " +
-            pct(share_cost_ten) + " & " +
-            ("--" if found is None else pct(seed_cost_e)) + " & " +
-            ("--" if found is None else pct(seed_cost_h)) + " \\\\"
+            pct(share_ten[E]) + " & " + pct(share_ten[0.15]) + " & " +
+            ("--" if found is None else pct(seed_cost[E])) + " & " +
+            ("--" if found is None else pct(seed_cost[0.15])) + " \\\\"
         )
         tag = {0.45: "FortyFive", 0.55: "FiftyFive"}.get(round(r, 2))
         if tag and found is not None:
             put(f"SeedEquiv{tag}", f"{100 * found:.2f}")
-            put(f"SeedCost{tag}", pct(seed_cost_h))
-            put(f"SeedCostE{tag}", pct(seed_cost_e))
+            put(f"SeedCost{tag}", pct(seed_cost[0.15]))
+            put(f"SeedCostE{tag}", pct(seed_cost[E]))
             put(f"ShareCost{tag}", pct(share_cost))
-            put(f"ShareCostTen{tag}", pct(share_cost_ten))
+            put(f"ShareCostTen{tag}", pct(float(delta.mean())))
+            put(f"ShareCostTenE{tag}", pct(share_ten[E]))
+            put(f"ShareCostTenH{tag}", pct(share_ten[0.15]))
     write_tex("table_seed.tex", lines)
     # Late repayment (Section 7): cash collected by the end of one term when a fraction of the
     # book pays late, per unit of deposits.

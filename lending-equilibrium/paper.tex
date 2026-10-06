@@ -588,7 +588,9 @@ the move from $r_c$ to 45\% (Table~\ref{tab:seed}). Only a criterion tied to the
 The loss model is the conditional asymptotic one: given the year's factor, the pool's loss rate is the conditional
 expectation, as in a pool of infinitely many small loans. A small pool adds idiosyncratic risk. Table~\ref{tab:finite}
 repeats the ten-year probability for pools of 100 and 1,000 loans, drawing each year's loss as a binomial count around
-the conditional rate: at $r=45\%$ the probability is \PTenFortyFivePoolHundred\% with 100 loans and
+the conditional re-lent rate (clipped to one): an annual proxy for idiosyncratic risk, not a simulation of revolving
+loans within the year, which the companion pricing paper's event-timed check provides
+\citep{pricingreserve2026}. At $r=45\%$ the probability is \PTenFortyFivePoolHundred\% with 100 loans and
 \PTenFortyFivePoolThousand\% with 1,000, against \PTenAtFortyFive\% in the limit. The ordering of shares is unchanged;
 the level is not, so the safety numbers below are those of a large pool and a small pool needs its own.
 
@@ -632,31 +634,35 @@ the rate adjust.
 \subsection{Seed capital against share}
 
 Table~\ref{tab:seed} asks what seed, added at the share $r_c$, gives the protection of a higher share over the same ten
-years, and compares the two costs over that horizon. The share's cost to lenders is the difference in their mean annual
-return over the first ten years between $r_c$ and $r$, from the simulation of Table~\ref{tab:safety}; its long-run cost,
-$u\,a\,(r-r_c)$ a year, is shown beside it and is larger, because within ten years part of the extra inflow is still
-building the reserve that the lenders of $r_c$ would also have paid for. The seed is a gift to the pool: anyone may fund
-it, its funder recovers nothing, and its cost is therefore the annuity that repays it over the ten years at the funder's
-hurdle rate, $k\,h/[1-(1+h)^{-10}]$, which is \AnnuityAtE\ of the seed a year at the funding rate and \AnnuityAtFifteen\ at a
-15\% hurdle. Matching the protection of 45\% takes a seed of \SeedEquivFortyFive\% of deposits, which costs
-\SeedCostFortyFive\% a year at a 15\% hurdle and \SeedCostEFortyFive\% at the funding rate, against \ShareCostTenFortyFive\%
-a year for the share over the ten years (\ShareCostFortyFive\% in the long run); matching 55\% takes a seed of
-\SeedEquivFiftyFive\%, at \SeedCostFiftyFive\% and \SeedCostEFiftyFive\% against \ShareCostTenFiftyFive\%
-(\ShareCostFiftyFive\%). The comparison is a conditional numerical result: it depends on the horizon, on the hurdle rate,
-and on the seed being written off in full. The seed does not replace the reserve: it protects against the first years,
-while the reserve builds, and the model never releases it.
+years, and compares the two costs over that horizon with one discounting convention. Let $\delta_t$ be the difference in
+lenders' expected return in year $t$ between $r_c$ and $r$, from the simulation of Table~\ref{tab:safety}, and
+$A(h)=\sum_{t=1}^{10}(1+h)^{-t}$ the ten-year annuity factor at a discount rate $h$. The share's levelised cost is
+$\sum_t\delta_t(1+h)^{-t}/A(h)$ a year; its long-run cost, $u\,a\,(r-r_c)$ a year, is shown beside it and is larger,
+because within ten years part of the extra inflow is still building the reserve that the lenders of $r_c$ would also have
+paid for. The seed is a gift to the pool: anyone may fund it, its funder recovers nothing, and its levelised cost is
+$k/A(h)$ a year, the annuity that repays it over the ten years at the funder's hurdle rate, which is \AnnuityAtE\ of the
+seed a year at the funding rate and \AnnuityAtFifteen\ at a 15\% hurdle. The same $h$ is used for both sides, once at the
+funding rate and once at 15\%; a funder who values the seed at a different rate from the lenders would change the
+comparison. Matching the protection of 45\% takes a seed of \SeedEquivFortyFive\% of deposits, which costs
+\SeedCostEFortyFive\% a year at the funding rate against \ShareCostTenEFortyFive\% for the share, and
+\SeedCostFortyFive\% at a 15\% hurdle against \ShareCostTenHFortyFive\% (the share's long-run cost is
+\ShareCostFortyFive\%); matching 55\% takes a seed of \SeedEquivFiftyFive\%, at \SeedCostEFiftyFive\% against
+\ShareCostTenEFiftyFive\% and \SeedCostFiftyFive\% against \ShareCostTenHFiftyFive\% (\ShareCostFiftyFive\% in the long
+run). The comparison is a conditional numerical result: it depends on the horizon, on the hurdle rate, and on the seed
+being written off in full. The seed does not replace the reserve: it protects against the first years, while the reserve
+builds, and the model never releases it.
 
 \begin{table}[ht]
   \centering\small
-  \caption{Seed against share over a ten-year horizon. Columns: the share (\%); its ten-year probability of losing
-  principal (\%, no seed); the seed (\% of deposits) that gives the same probability at $r_c$; the yearly cost to lenders
-  of the share above $r_c$ in the long run, $u\,a\,(r-r_c)$, and over the first ten years, the difference in mean annual
-  return from Table~\ref{tab:safety} (\%); the yearly cost of the seed as a ten-year annuity at a hurdle rate equal to
-  the funding rate and at 15\% (\%).}
+  \caption{Seed against share over a ten-year horizon, levelised at the same discount rate. Columns: the share (\%); its
+  ten-year probability of losing principal (\%, no seed); the seed (\% of deposits) that gives the same probability at
+  $r_c$; the yearly cost to lenders of the share above $r_c$ in the long run, $u\,a\,(r-r_c)$, and levelised over the
+  first ten years at the funding rate and at 15\% (\%); the yearly cost of the seed as a ten-year annuity at the same two
+  rates (\%).}
   \label{tab:seed}
-  \begin{tabular}{rrrrrrr}
+  \begin{tabular}{rrrrrrrr}
     \toprule
-    $r$ & prob. & seed & share, long run & share, ten years & seed at $e$ & seed at 15\% \\
+    $r$ & prob. & seed & share, long run & share at $e$ & share at 15\% & seed at $e$ & seed at 15\% \\
     \midrule
     \inputrows{data/table_seed.tex}
     \bottomrule
