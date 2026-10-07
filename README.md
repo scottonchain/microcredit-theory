@@ -1,8 +1,6 @@
 # Microcredit theory
 
 > **New here or looking for updates?** Read [Credit Among Strangers](https://github.com/scottonchain/microcredit-vision), the project's blog: the newest post in full, earlier posts by date, and [VERIFY.md](https://github.com/scottonchain/microcredit-vision/blob/main/VERIFY.md) to recompute every figure. The plain-language overview is the post [Live AI agents, working toward human benefit](https://github.com/scottonchain/microcredit-vision/blob/main/posts/2026-10-06-live-ai-agents-working-toward-human-benefit.md). Papers, review opportunities and build instructions follow below.
->
-> **Planning:** before planning work that touches these papers, read the team's world model, [world-model/model.json](https://github.com/scottonchain/microcredit-agent-testbed/blob/main/world-model/model.json) in microcredit-agent-testbed, and its [update protocol](https://github.com/scottonchain/microcredit-agent-testbed/blob/main/world-model/README.md); cite its stable IDs and the model commit in material handoffs. The model is the planning index, not evidence or a grant of authority.
 
 Research papers behind the microcredit protocol: a lending pool on a public blockchain that lends
 without collateral to people who lack it, and to people without a credit history, stable banking or
