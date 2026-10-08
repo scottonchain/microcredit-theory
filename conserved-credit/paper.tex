@@ -416,32 +416,31 @@ Corollary~\ref{cor:reserve} separates what lenders bear.
 \begin{remark}[Arithmetic]\label{rem:arithmetic}
 The analysis uses exact arithmetic. The implementation works in integer units of $10^{-6}$ USDC
 with division rounded down, and the rounding accumulates over the life of the system, so the
-integer-arithmetic form of each bound carries an explicit error term. Three roundings occur.
+integer-arithmetic form of each bound carries an explicit error term. Two roundings occur.
 Rounding down coverage~\eqref{eq:coverage} and the dues credited to an account only lowers limits
 and the right-hand sides, in the safe direction. Rounding down each pro-rata charge $a_u$ or $b_u$ in
 Algorithm~\ref{alg:default} leaves less than one unit uncharged per (default, backer) pair; with $E$
-such pairs so far, at most $E$ units of loss are attributed to nobody. A loan whose balance falls
-below one cent is closed with the remainder forgiven, less than one cent per closure; with $C$ such
-closures, lenders or the reserve have absorbed less than $C$ cents that no default attributed. The
-integer-arithmetic forms are therefore
+such pairs so far, at most $E$ units of loss are attributed to nobody. An earlier version of the
+contract had a third: a loan whose balance fell below one cent was closed with the remainder
+forgiven even when that remainder was principal, which lenders or the reserve then absorbed. Since the
+correction of issue CI-30 a loan closes short only when the remainder is interest, which is
+forgiven, never booked and earns no dues; a payment short of the principal keeps the loan open.
+Forgiven principal is therefore zero and no term for it enters any bound. The integer-arithmetic
+forms are
 \[
   \Lambda+U\le\sum_a\bigl(\ell(a)+d(a)\bigr)+E\cdot10^{-6}\quad\text{(Theorem~\ref{thm:loss})},\qquad
-  \Lambda_L+\Phi_L+\max\{0,U-R\}\le\sum_a\ell(a)+E\cdot10^{-6}+C\cdot10^{-2}\quad\text{(Corollary~\ref{cor:reserve})},
+  \Lambda_L+\max\{0,U-R\}\le\sum_a\ell(a)+E\cdot10^{-6}\quad\text{(Corollary~\ref{cor:reserve})},
 \]
-in USDC, where $\Phi_L$ is the forgiven principal that fell on lenders, and the same terms attach to
-Corollary~\ref{cor:cut} and Theorem~\ref{thm:changing}. The campaign of Section~\ref{sec:fuzz} has
-$E$ at most 32 times its \FuzzDefaults{} defaults and $C$ at most its \FuzzLoans{} loans. Its harness
-does not use these bounds. It records, at every default, the exact remainder that the rounded
+in USDC, and the same terms attach to Corollary~\ref{cor:cut} and Theorem~\ref{thm:changing}. The
+campaign of Section~\ref{sec:fuzz} has $E$ at most 32 times its \FuzzDefaults{} defaults. Its harness
+does not use this bound. It records, at every default, the exact remainder that the rounded
 pro-rata charges leave uncharged (the quantity the term $E\cdot10^{-6}$ bounds) and asserts the first
 inequality with that exact remainder in place of $E\cdot10^{-6}$ (property I2 of
 Table~\ref{tab:coverage}). For the second it asserts
-$\Lambda_L+\max\{0,U-R\}\le\sum_a\ell(a)+\text{(reserve released to lenders)}+\text{(forgiven balances the
-reserve absorbed)}+\text{(that remainder)}$ (property I8): the forgiven principal that fell on
-lenders, $\Phi_L$, is not on its left-hand side and the term $C\cdot10^{-2}$ is not asserted; the
-total forgiven principal is tracked exactly and enters only the cash ledger identity
-(\texttt{invariant\_poolLedgers}), which balances deposits against cash, principal lent, payouts,
-loss before the reserve and forgiven principal. Asserting the bound on $\Phi_L$ as stated is part
-of the harness extension of Section~\ref{sec:validation}.
+$\Lambda_L+\max\{0,U-R\}\le\sum_a\ell(a)+\text{(reserve released to lenders)}+\text{(that remainder)}$
+(property I8), and property I9 asserts that no principal is written off at a repaid close and that the
+reserve pays nothing for one. The cash ledger identity (\texttt{invariant\_poolLedgers}) balances
+deposits against cash, principal lent, payouts and loss before the reserve.
 \end{remark}
 
 % ---------------------------------------------------------------------------------------------
@@ -973,7 +972,7 @@ deployment on a public test network holds test funds only.
     Corollary~\ref{cor:budget} & none & \texttt{\seqsplit{testReportsCannotIssueBeyondTheBudget}}, \texttt{\seqsplit{testBudgetStaysHeldWhileALineMayBeInUse}}, \texttt{\seqsplit{testReleaseNeedsTheLendingPool}}, \texttt{\seqsplit{testOneReportCanRaiseScoresOnlySoFar}}; the owner actions listed before the corollary are outside it \\
     Theorem~\ref{thm:farming} & none & \texttt{\seqsplit{testRecycledSeedBuildsHistoryThatEarnsNoCredit}}; the recycled-seed attack of Section~\ref{sec:sim} \\
     Propositions~\ref{prop:lender}, \ref{prop:pooled} & none & \texttt{\seqsplit{testAttackerWhoIsAlsoALenderCannotFarmDues}}; the fork tests \texttt{\seqsplit{testCI21ReserveExhaustedHalfPool}} and \texttt{\seqsplit{testCI21ReserveExhaustedDominantLender}} on a copy of the deployed contract \\
-    Pool accounting & \texttt{I5\_solvency}, \texttt{I6\_lenderClaims}, \texttt{I7\_impairment}, \texttt{creditLedgers}, \texttt{poolLedgers}, \texttt{handlerHealth} & \\
+    Pool accounting & \texttt{I5\_solvency}, \texttt{I6\_lenderClaims}, \texttt{I7\_impairment}, \texttt{I9\_noPrincipalForgiven}, \texttt{creditLedgers}, \texttt{poolLedgers}, \texttt{handlerHealth} & \\
     \bottomrule
   \end{tabular}
 \end{table}
