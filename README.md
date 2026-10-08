@@ -24,6 +24,12 @@ papers instead, so that each paper stays focused.
 | [issuer-policy](issuer-policy/) | Credit Lines for Pseudonymous Borrowers: Identity-Gated Bayesian Lending under an On-Chain Issuance Budget | Operational research | European Journal of Operational Research | Working paper, complete |
 | [lending-equilibrium](lending-equilibrium/) | Pricing the Reserve: Market Equilibrium, Lender Safety and Liquidity in an Uncollateralized On-Chain Lending Pool | Financial intermediation | Journal of Financial Intermediation | Working paper, complete |
 
+## Technical notes
+
+| Directory | Note | Status |
+| --- | --- | --- |
+| [transitive-allocation](transitive-allocation/NOTE.md) | Consented, stake-rooted, bounded-depth allocation certificates: ledger conservation, global reservation, consent bound, loss attribution and a Sybil-neutrality statement for the two-hop router, with the dynamic cases and the fixture list | Draft, not yet independently reviewed |
+
 Each paper is kept current as the protocol and its analysis change. New results start a new
 directory when they answer a different question in a different discipline. Referee reports on the
 papers are kept unchanged under `reviews/`; the author responses and the revisions they led to are
