@@ -194,6 +194,7 @@ addresses of one person are not detected; Theorem 7 is the statement of what tha
 | Replay | holds | The pool nonce is consumed by the borrower's request; consents are reusable by design (Thm 4 remark). |
 | Pool owner actions | **open** | The pool's owner, guardian and oracle can pause, change parameters, set a score override for an address (the router refuses an origination if the vault has granted credit; an override set later does not change a lot already backed). The theorem assumes the pool is the audited bytecode with the owner not acting against it; this is the standing assumption of the whole project. |
 | Pool 32-backer slot limit | **open (liveness)** | A griefer can fill a managed borrower's 32 backer slots with 1 USDC backings; the vault's `back` then reverts. Safety is unaffected; the borrower must use another address. |
+| Fresh-address manager lock | **open (liveness)** | A stranger can back a fresh address before it names a manager; the pool then refuses `setManager` until that backing is withdrawn, so the borrower uses another address. Safety is unaffected. |
 | Token behaviour | **open** | USDC blacklisting or pausing could trap a root's withdrawal or the vault's return. The router assumes a token without transfer fees or hooks (checked by the deposit balance difference). |
 | Mid incentives | **open** | A mid has no capital at risk, so nothing here bounds a mid's incentive to vouch for a bad borrower; the roots bear the cost, bounded by their consents. Mid first-loss capital needs its own theorem. |
 | Depth above two | **open** | Not implemented. A third hop would need the same reservation argument for an edge that is both a mid's and a root's; not proved here. |
@@ -217,6 +218,7 @@ Unit suite: `test/TransitiveStakeRouter.t.sol` (31 tests).
 | Third-party backer, shared slash, dust | `thirdPartyBack`, `thirdPartyUnback`, `defaultOne` snapshot | sync check, R5 with dust |
 | Revocation and version | `revoke` | consents are rebuilt at the new version; unit tests for old versions |
 | Donations | `donate` (router and vault) | R1, sync checks |
+| Managed pool exposure equals router-recorded active principal | invariant R7 (`totalLentOut` equals the active lots' unpaid principal) | Codex's requested equality |
 | Not yet in the handler | pool owner actions (pause, parameter changes, overrides), blacklisted token, a smart-wallet root in the campaign | listed as open above; a smart-wallet root is a unit test |
 
 **Mutation check.** Ten deliberate bugs in the router and one in the pool's gate are each caught by these suites
