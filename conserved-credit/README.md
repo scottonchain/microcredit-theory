@@ -24,23 +24,20 @@ Working paper, prepared for ACM Transactions on Economics and Computation.
 | Theorem 7.2, Corollary 7.3 | Farming history credit; the trilemma | Theorem 3 |
 | Propositions 7.4, 7.5 | What a borrower who also lends surrenders; the pooled-reserve case | Section 4.1 |
 
-## Build
+## Build and reproduce
 
-TeX Live 2023 or later with the `acmart` class, `pgfplots` and `algorithm2e`.
+Use the [root build and reproduction guide](../#build-and-reproduce) with the selector
+`conserved-credit` for the PDF, attack simulation and summaries of recorded evidence.
+
+### Fresh Foundry experiments
+
+These separate experiments use contract commit `b725a85`. Run them from disposable copies of both
+repositories: the experiment scripts write this paper's `data/`, and mutation analysis edits the
+contract worktree. Keep the new results separate from the recorded campaign.
+Run `forge` in the contract copy's `packages/foundry` directory and the Python commands in the
+theory copy's `conserved-credit` directory, passing absolute paths for the two fuzz logs.
 
 ```bash
-make            # latexmk -pdf paper.tex
-```
-
-## Reproduce the data
-
-The contract repository is https://github.com/scottonchain/microcredit-contract at commit `b725a85`.
-
-```bash
-# Attack simulation (Section 8.4): about 10 seconds
-python3 analysis/sybil_sim/run.py                                   # in the contract repository
-python3 scripts/extract_simulation.py <path to microcredit-contract>
-
 # Stateful fuzzing (Section 8.2): raise the inline settings in
 # packages/foundry/test/invariant/CreditConservation.invariant.t.sol to runs = 1300, depth = 256, then
 INVARIANT_STATS_FILE=./inv_stats.txt forge test --match-path 'test/invariant/*' | tee forge.log

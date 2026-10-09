@@ -1,10 +1,12 @@
 """Offline checks for reproducibility isolation and retained paper interfaces."""
 import csv
 import importlib.util
+import io
 import json
 import os
 import subprocess
 import sys
+import tarfile
 import tempfile
 import unittest
 from pathlib import Path
@@ -100,6 +102,31 @@ class ReproductionTests(unittest.TestCase):
             (directory / "__pycache__").mkdir()
             (directory / "__pycache__/model.cpython.pyc").write_bytes(b"runtime-specific")
             self.assertEqual(list(reproduce.file_hashes(directory)), ["model.py"])
+
+    def test_workspace_copies_only_selected_inputs_without_changing_sources(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            source, workspace = Path(temporary) / "source", Path(temporary) / "workspace"
+            workspace.mkdir()
+            inputs = {"paper_support.py": b"# shared helper\n", "paper/scripts/model.py": b"# model\n",
+                      "paper/data/input.csv": b"value\n1\n", "paper/paper.pdf": b"recorded PDF",
+                      "paper/scripts/__pycache__/model.pyc": b"bytecode", "other/data/input.csv": b"another paper"}
+            for name, content in inputs.items():
+                path = source / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(content)
+            archive_bytes = io.BytesIO()
+            with tarfile.open(fileobj=archive_bytes, mode="w") as archive:
+                archive.add(source / "paper/scripts/model.py", arcname="analysis/model.py")
+            archived = subprocess.CompletedProcess([], 0, archive_bytes.getvalue())
+            with patch.object(reproduce, "ROOT", source), patch.object(reproduce.subprocess, "run", return_value=archived):
+                reproduce.prepare_workspace(Path("contract"), ["paper"], workspace)
+            copied = {str(path.relative_to(workspace)): path.read_bytes() for path in workspace.rglob("*") if path.is_file()}
+            self.assertEqual(copied, {**{name: inputs[name] for name in (
+                "paper_support.py", "paper/scripts/model.py", "paper/data/input.csv")},
+                "contract/analysis/model.py": inputs["paper/scripts/model.py"]})
+            for name in copied:
+                (workspace / name).write_bytes(b"changed in disposable workspace")
+            self.assertEqual({str(path.relative_to(source)): path.read_bytes() for path in source.rglob("*") if path.is_file()}, inputs)
 
 
 class CompatibilityTests(unittest.TestCase):

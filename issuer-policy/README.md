@@ -26,12 +26,8 @@ Revised on 6 October 2026 in response to the internal referee report (issue #6).
 
 ## Build and reproduce
 
-```bash
-make                                                                      # latexmk -pdf paper.tex
-python3 analysis/issuer_policy/run.py                                     # in the contract repository, about 35 s
-python3 scripts/extract_issuer_policy.py <path to microcredit-contract>   # commit b725a85
-python3 scripts/misspecification.py <path to microcredit-contract>        # about 25 s
-```
+Use the [root build and reproduction guide](../#build-and-reproduce) with the selector
+`issuer-policy` for the PDF, policy experiments and misspecification runs.
 
 ## Contributing
 

@@ -30,9 +30,10 @@ papers instead, so that each paper stays focused.
 | --- | --- | --- |
 | [transitive-allocation](transitive-allocation/NOTE.md) | Consented, stake-rooted, bounded-depth allocation certificates: ledger conservation, global reservation, consent bound, loss attribution and a Sybil-neutrality statement for the two-hop router, with the dynamic cases and the fixture list | Draft, not yet independently reviewed |
 
-Each paper is kept current as the protocol and its analysis change. New results start a new
-directory when they answer a different question in a different discipline. Referee reports on the
-papers are kept unchanged under `reviews/`; the author responses and the revisions they led to are
+Scope new work against the [current team direction](https://github.com/scottonchain/microcredit-agent-testbed/tree/main/world-model)
+and a concrete question about bounded, voluntary risk or measured human benefit. Existing papers
+retain their recorded inputs and source pins; a new calculation has its own result identity.
+Referee reports stay unchanged under `reviews/`; author responses and the revisions they led to are
 in the issue that carries each report (the first, an internal report on all five papers, is
 [issue #6](https://github.com/scottonchain/microcredit-theory/issues/6)).
 
@@ -56,10 +57,29 @@ neither journal endorsement nor acceptance; no new payment is promised.
 Open an issue in this repository and name the paper and the result. Corrections and contributions
 are credited in the paper they improve.
 
-## Build
+## Build and reproduce
 
-Each paper builds with `make` in its directory (TeX Live 2023 or later, with `acmart`, `pgfplots`
-and `algorithm2e` where the paper uses them).
+Run commands from this repository's root. PDF builds need TeX Live 2023 or later with `latexmk`,
+`acmart`, `pgfplots` and `algorithm2e`. `latexmk` decides which dependencies need rebuilding.
+
+```bash
+make check                       # offline tooling checks; no simulations
+make conserved-credit            # one paper; make all builds all five
+make clean                       # auxiliary files only; keeps PDFs and data
+python3 reproduce.py all --tables-only --output /tmp/paper-tables
+```
+
+[reproduce.py](reproduce.py) owns the contract source pin and ordered reproduction commands;
+`--help` lists paper selectors and options. The default contract checkout is the sibling
+`microcredit-contract`; its current branch is irrelevant, but it must contain the recorded commit.
+Use [requirements.txt](requirements.txt) for the recorded dependencies. The reference environment
+used Python 3.11.15; numerical and LP outputs can vary in other environments.
+
+Start with `--dry-run` or `--tables-only`. Omit `--tables-only` when a question requires fresh Python
+simulations. Each run uses disposable copies of scripts and data, refuses an existing output path,
+and records commands, versions and hashes in `reproduction.json`. Foundry evidence is summarised
+from recorded inputs; a fresh campaign has [separate instructions](conserved-credit/#fresh-foundry-experiments).
+Agreement with a fixture does not establish demand or human benefit.
 
 ## Authorship
 

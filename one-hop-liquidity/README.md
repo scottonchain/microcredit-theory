@@ -26,12 +26,8 @@ Revised on 6 October 2026 in response to the internal referee report (issue #6).
 
 ## Build and reproduce
 
-```bash
-make                                                                  # latexmk -pdf paper.tex
-python3 analysis/liquidity/run.py                                     # in the contract repository, about 4 minutes
-python3 scripts/extract_liquidity.py <path to microcredit-contract>   # commit b725a85
-python3 scripts/steady_replicates.py <path to microcredit-contract>   # replication and fixed cohort, a few minutes
-```
+Use the [root build and reproduction guide](../#build-and-reproduce) with the selector
+`one-hop-liquidity` for the PDF, liquidity experiments, replication and fixed-cohort runs.
 
 ## Contributing
 

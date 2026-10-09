@@ -27,14 +27,9 @@ welfare. Revised on 6 October 2026 in response to the internal referee report (i
 
 ## Build and reproduce
 
-```bash
-make                                              # latexmk -pdf paper.tex
-sh scripts/run_all.sh <path to microcredit-contract>   # about 6 minutes; commit b725a85 of the contract repository
-```
-
-The scripts are deterministic: every draw uses a fixed seed, and two consecutive runs give identical files.
-They need Python 3 with numpy and scipy, and import the loss model from `analysis/credit_risk` of the
-contract repository.
+Use the [root build and reproduction guide](../#build-and-reproduce) with the selector
+`lending-equilibrium` for the PDF and all three scenario runs. The older `scripts/run_all.sh`
+entry point remains available for reproductions in a disposable paper checkout; it writes `data/`.
 
 ## Contributing
 

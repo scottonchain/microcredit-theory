@@ -7,7 +7,7 @@
 
 The contract checkout must contain the exact recorded commit below; its current
 branch is irrelevant. The pinned analysis is extracted to a disposable directory.
-Paper sources and reference data are copied there, and only a successful run is
+Paper scripts and reference data are copied there, and only a successful run is
 copied to a NEW output directory. Existing output directories are refused.
 
 --tables-only recomputes extraction tables using the committed input snapshots;
@@ -94,7 +94,9 @@ def prepare_workspace(contract, papers, workspace):
     with tarfile.open(fileobj=io.BytesIO(raw)) as archive:
         archive.extractall(target, filter="data")
     for paper in papers:
-        shutil.copytree(ROOT / paper, workspace / paper, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+        for directory in ("scripts", "data"):
+            shutil.copytree(ROOT / paper / directory, workspace / paper / directory,
+                            ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
     shutil.copy2(ROOT / "paper_support.py", workspace / "paper_support.py")
     if "conserved-credit" in papers:
         with gzip.open(workspace / "conserved-credit/data/fuzz_runs.txt.gz", "rb") as source:
