@@ -65,7 +65,7 @@ import sys
 
 import numpy as np
 
-CONTRACT = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else "../../microcredit-contract")
+CONTRACT = pathlib.Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else pathlib.Path(__file__).resolve().parents[3] / "microcredit-contract"
 sys.path.insert(0, str(CONTRACT / "analysis/issuer_policy"))
 import policy as pol  # noqa: E402
 import simulate as sim  # noqa: E402

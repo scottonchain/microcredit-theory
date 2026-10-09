@@ -18,7 +18,7 @@ import sys
 import numpy as np
 from scipy.stats import chi2, norm, t as student
 
-CONTRACT = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else "../../microcredit-contract")
+CONTRACT = pathlib.Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else pathlib.Path(__file__).resolve().parents[3] / "microcredit-contract"
 sys.path.insert(0, str(CONTRACT / "analysis/credit_risk"))
 import vasicek as vs  # noqa: E402
 

@@ -38,7 +38,7 @@ SERIES = [
 
 
 def main() -> None:
-    repo = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else "../../microcredit-contract")
+    repo = pathlib.Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else pathlib.Path(__file__).resolve().parents[3] / "microcredit-contract"
     rows = list(csv.DictReader(open(repo / "analysis/sybil_sim/results/attacks.csv")))
     profit = {}
     for r in rows:

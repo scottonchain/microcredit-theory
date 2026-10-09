@@ -88,18 +88,23 @@ SEEDS = [1, 2, 3]  # fuzz seeds; detection by fuzzing is reported as a count ove
 
 
 def main() -> None:
+    if len(sys.argv) != 2:
+        raise SystemExit("usage: mutation_analysis.py DISPOSABLE_CONTRACT_WORKTREE")
     root = pathlib.Path(sys.argv[1]) / "packages/foundry"
     src = root / "contracts/DecentralizedMicrocredit.sol"
     original = src.read_text()
     unit_cmd = ["forge", "test", "--no-match-path", "test/invariant/*"]
     base = subprocess.run(unit_cmd, cwd=root, capture_output=True, text=True, timeout=3600)
-    baseline_failed, _ = parse_results(base.stdout + base.stderr)
+    baseline_failed, baseline_passed = parse_results(base.stdout + base.stderr)
+    if not (baseline_failed or baseline_passed) or (base.returncode and not baseline_failed):
+        raise SystemExit("baseline unit suite did not complete with test results; no mutant was applied")
+    for ident, _, old, _ in MUTANTS:
+        if original.count(old) != 1:
+            raise SystemExit(f"{ident}: expected one source location, found {original.count(old)}; no mutant was applied")
     print(f"unit tests failing without any fault (ignored below): {baseline_failed}", flush=True)
     results = []
     try:
         for ident, desc, old, new in MUTANTS:
-            if original.count(old) != 1:
-                sys.exit(f"{ident}: the original line occurs {original.count(old)} times")
             src.write_text(original.replace(old, new))
             failed, passed, detections = set(), set(), 0
             for seed in SEEDS:
@@ -108,6 +113,8 @@ def main() -> None:
                 out = proc.stdout + proc.stderr
                 (root / f"mutant-{ident}-seed{seed}.log").write_text(out)
                 f, p = parse_results(out)
+                if not (f or p) or (proc.returncode and not f):
+                    raise RuntimeError(f"{ident}: seed {seed} did not complete; no mutation summary was written")
                 failed |= set(f)
                 passed |= set(p)
                 detections += bool(f)
@@ -117,10 +124,11 @@ def main() -> None:
                 # Not caught by the fuzzing: run the unit tests (fork tests skip without an RPC).
                 unit = subprocess.run(unit_cmd, cwd=root, capture_output=True, text=True, timeout=3600)
                 (root / f"mutant-{ident}-unit.log").write_text(unit.stdout + unit.stderr)
-                unit_failed = [n for n in parse_results(unit.stdout + unit.stderr)[0] if n not in baseline_failed]
-            if not (failed or passed):
-                status = "compile error"
-            elif failed:
+                failures, successes = parse_results(unit.stdout + unit.stderr)
+                if not (failures or successes) or (unit.returncode and not failures):
+                    raise RuntimeError(f"{ident}: unit suite did not complete; no mutation summary was written")
+                unit_failed = [n for n in failures if n not in baseline_failed]
+            if failed:
                 status = "detected by fuzzing"
             elif unit_failed:
                 status = "detected by unit tests"

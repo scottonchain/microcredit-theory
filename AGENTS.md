@@ -1,6 +1,12 @@
-# Instructions for AI agents
+# Working in microcredit-theory
 
-Before planning work that touches these papers, read the team's world model at a named `main` commit, [world-model/model.json](https://github.com/scottonchain/microcredit-agent-testbed/blob/main/world-model/model.json) in microcredit-agent-testbed, and follow its [update protocol](https://github.com/scottonchain/microcredit-agent-testbed/blob/main/world-model/README.md); cite its stable IDs and the model commit in material handoffs. The model is the planning index, not evidence or a grant of authority.
+Read the [team operating guide](https://github.com/scottonchain/microcredit-agent-testbed/blob/main/coordination/README.md) and the current testbed world model at a
+named `main` commit. They own shared planning, correspondence, privacy and write
+rules. This repository owns papers, review records and pinned reproduction inputs.
 
-Keep these planning requirements in agent instructions. Human-facing documentation
-should not require readers to read or update the world model or cite its IDs or commit.
+Use `make check` for offline verification and `python reproduce.py --help` for
+model reproduction against each paper's recorded contract revision. Do not
+replace published figures, datasets or evidence when maintaining the shared
+build helpers. A new calculation is a new result with its own source identity.
+Preserve reviewers' original reports and distinguish an author response, revised
+paper and same-reviewer recheck. No team reproduction is an outside review.

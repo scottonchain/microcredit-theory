@@ -1,9 +1,12 @@
 #!/bin/sh
-# Reproduce every number of the paper: the PD 5% book, then the PD 3% and PD 10% books, then the
-# robustness table. Usage: sh scripts/run_all.sh <path to microcredit-contract>
+# Compatibility command: regenerate this paper's data in place.
+# Prefer ../../reproduce.py for isolated, pinned reproduction into a separate output directory.
 set -eu
-C=${1:-../../microcredit-contract}
-python3 scripts/equilibrium.py "$C"
-PD=0.03 PREMIUM=0.06 OUTSUB=robust/pd3 python3 scripts/equilibrium.py "$C"
-PD=0.10 PREMIUM=0.14 OUTSUB=robust/pd10 python3 scripts/equilibrium.py "$C"
-python3 scripts/robustness_table.py
+paper_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+contract_dir=${1:-"$paper_dir/../../microcredit-contract"}
+contract_dir=$(CDPATH= cd -- "$contract_dir" && pwd)
+python_bin=${PYTHON:-python3}
+PD=0.05 PREMIUM=0.08 OUTSUB= "$python_bin" "$paper_dir/scripts/equilibrium.py" "$contract_dir"
+PD=0.03 PREMIUM=0.06 OUTSUB=robust/pd3 "$python_bin" "$paper_dir/scripts/equilibrium.py" "$contract_dir"
+PD=0.10 PREMIUM=0.14 OUTSUB=robust/pd10 "$python_bin" "$paper_dir/scripts/equilibrium.py" "$contract_dir"
+"$python_bin" "$paper_dir/scripts/robustness_table.py"

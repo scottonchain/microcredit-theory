@@ -33,9 +33,16 @@ def word(n: int) -> str:
 
 def main() -> None:
     data = pathlib.Path(__file__).resolve().parent.parent / "data"
-    rows = list(csv.DictReader(open(data / "mutation.csv")))
+    with (data / "mutation.csv").open(encoding="utf-8", newline="") as handle:
+        rows = list(csv.DictReader(handle))
+    if not rows:
+        raise SystemExit("mutation.csv contains no experiments")
     total = len(rows)
     seeds = int(rows[0]["seeds"])
+    if seeds <= 0 or any(int(r["seeds"]) != seeds or not 0 <= int(r["seeds_detecting"]) <= seeds for r in rows):
+        raise SystemExit("mutation.csv has inconsistent seed counts; no summary was written")
+    if any(r["status"] not in {"detected by fuzzing", "detected by unit tests", "not detected"} for r in rows):
+        raise SystemExit("mutation.csv contains an incomplete experiment; do not report it as an undetected fault")
     every = sum(int(r["seeds_detecting"]) == seeds for r in rows)
     some = sum(0 < int(r["seeds_detecting"]) < seeds for r in rows)
     unit = sum(int(r["seeds_detecting"]) == 0 and bool(r["failed_unit_tests"]) for r in rows)
