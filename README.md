@@ -31,6 +31,7 @@ papers instead, so that each paper stays focused.
 | Directory | Note | Status |
 | --- | --- | --- |
 | [transitive-allocation](transitive-allocation/NOTE.md) | Consented, stake-rooted, bounded-depth allocation certificates: ledger conservation, global reservation, consent bound, loss attribution and a Sybil-neutrality statement for the two-hop router, with the dynamic cases and the fixture list | Draft, not yet independently reviewed |
+| [revolving-first-hire-guarantee](revolving-first-hire-guarantee/DRAFT.md) | **Internal draft, not a public claim.** A revolving first-job payment guarantee: break-even contribution, why average break-even is not solvency for a small reserve, exposure caps, correlation, contribution design, the benefit multiplier and a minimum pilot, with a reproducible simulation | Internal draft, 2026-10-11 |
 
 Scope new work against the [current team direction](https://github.com/scottonchain/microcredit-agent-testbed/tree/main/world-model)
 and a concrete question about bounded, voluntary risk or measured human benefit. Existing papers

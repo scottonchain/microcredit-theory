@@ -1,0 +1,19 @@
+Section 5 table: $100 reserve, one open guarantee at a time, 500 jobs
+p=0.01 q=0.9 G=60 c=2.0 load=0.0 r=2.92 P(ruin)=0.679
+p=0.01 q=0.9 G=60 c=2.0 load=0.5 r=4.38 P(ruin)=0.180
+p=0.03 q=0.8 G=60 c=1.0 load=0.5 r=5.41 P(ruin)=0.387
+p=0.10 q=0.8 G=60 c=1.0 load=0.5 r=14.58 P(ruin)=0.507
+p=0.03 q=0.9 G=20 c=2.0 load=0.5 r=4.47 P(ruin)=0.001
+p=0.10 q=0.6 G=20 c=2.0 load=0.5 r=11.11 P(ruin)=0.036
+Reserve size, G=60, c=1, q=0.8, +50% loading
+p=0.03 u=100 P(ruin)=0.387
+p=0.03 u=300 P(ruin)=0.015
+p=0.10 u=100 P(ruin)=0.507
+p=0.10 u=300 P(ruin)=0.048
+Correlation: blocks of 5 jobs share one client outcome with probability rho; G=20, c=1, q=0.8, +50% loading
+p=0.03 rho=0.0 P(ruin)=0.003
+p=0.03 rho=0.2 P(ruin)=0.149
+p=0.03 rho=0.5 P(ruin)=0.201
+p=0.10 rho=0.0 P(ruin)=0.030
+p=0.10 rho=0.2 P(ruin)=0.281
+p=0.10 rho=0.5 P(ruin)=0.360
