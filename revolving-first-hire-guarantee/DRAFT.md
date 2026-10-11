@@ -102,7 +102,9 @@ not a refinement.
 **What this means for the claim.** With positive loading, caps and a floor, a reserve can in
 principle revolve for a long time with a stated probability of not running out. It cannot be
 promised to last for ever, and a $100 reserve cannot be said to last at all until measured `p`,
-`q`, `c` and correlation support it.
+`q`, `c` and correlation support it. A $100 reserve backing a $60 guarantee stops for good if its
+first claim comes before its first contribution, with probability p / (p + (1 − p) q): 24% at
+p = 18% and q = 0.7, whatever the contribution (pointed out by the testbed polling session).
 
 ## 6. Contribution design
 
@@ -126,17 +128,23 @@ later, it becomes a small personal debt, which the design should avoid.
 ## 8. The strongest challenge: does it create first jobs?
 
 Two scorecards must be kept apart. The reserve scorecard (sections 4 and 5) asks whether the pool
-survives. The benefit scorecard asks whether people are better off per sponsor dollar:
+survives. The benefit scorecard, as agreed with Codex and recorded in the north star, is
 
-    M = (incremental net spendable earnings caused by the guarantee
-         + measured incremental follow-on earnings − contributions paid − displacement and harms)
-        / (sponsor capital consumed + fees, support and administration it funds + capital-lock cost)
+    M = (incremental spendable newcomer earnings + measured incremental follow-on earnings
+         − displacement − harms)
+        / (guarantee claims + fees + support and administration + capital-lock cost)
 
-Contributions recapitalise the pool and are a cost to workers, so they appear in the numerator as
-a deduction and are reported separately as recapitalisation. A self-sustaining reserve makes the
-denominator small, which can make `M` look large. That is exactly where honesty matters: if the
-guarantee causes no extra jobs or earnings, the numerator is negative, because workers pay
-contributions for protection that changed nothing.
+Contributions recapitalise the pool and are reported on the reserve scorecard, not as benefit;
+sponsor capital consumed is reported beside `M`. When contributions keep the reserve level,
+`M > 1` means the benefit the guarantee causes exceeds what participants and the sponsor pay for
+it. An earlier version of this draft used a sponsor-capital denominator, which a self-sustaining
+reserve shrinks towards zero; Codex's form cannot inflate that way.
+
+**What workers net.** At break-even pricing with the guarantee equal to the wage w, the expected net
+gain to workers per job is a·w·(s − p) − c, where `a` is the share of jobs the guarantee causes and
+`s` the worker's net share of the wage. Workers come out ahead only if a > c / (w·(s − p)): about
+0.10 at s = 0.5, p = 18%, c = $2 (derived by the testbed polling session and checked here). If the
+guarantee causes nothing, workers pay contributions for protection that changed nothing.
 
 On a platform with funded escrow, client nonpayment is already largely covered for work done
 through the platform's own process: fixed-price milestones are funded before work, and logged
@@ -164,8 +172,12 @@ A bounded first pilot:
   floor 2G.
 - **Contribution:** a percentage of the paid wage with a small cap, taken at payment or pledged
   and never pursued.
-- **Causal test:** offer the guarantee on a seeded random half of eligible jobs or applications,
-  so the difference in accepted work and earnings can be attributed to it.
+- **Causal test:** offer the guarantee on a seeded random half of eligible jobs, clients or
+  workers, never applications competing for the same job (applicants to one job compete, so a
+  comparison by application mostly measures newcomers displacing each other).
+- **Legal check first:** before any worker contribution is collected, check whether ILO Convention
+  181, article 7 (no fees charged to workers by private employment agencies) applies to the
+  guarantor.
 - **Measure:** offers, take-up, jobs accepted, client payments and nonpayments (`p`), remittances
   (`q`), costs (`c`), wages, fees, hours, prior earnings, follow-on paid work at 8 weeks,
   disputes and complaints.
