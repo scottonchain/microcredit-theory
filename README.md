@@ -1,5 +1,7 @@
 # Microcredit theory
 
+> **Project direction:** the cross-repo [north star and current path](https://github.com/scottonchain/microcredit-agent-testbed/blob/main/coordination/NORTH_STAR.md) defines the current evidence path. This repository owns papers, models and reproducible research; it does not own the operational backlog or live deployment state.
+
 > **New here or looking for updates?** Read [Credit Among Strangers](https://github.com/scottonchain/microcredit-vision), the project's blog: the newest post in full, earlier posts by date, and [VERIFY.md](https://github.com/scottonchain/microcredit-vision/blob/main/VERIFY.md) to recompute every figure. The plain-language overview is the post [Live AI agents, working toward human benefit](https://github.com/scottonchain/microcredit-vision/blob/main/posts/2026-10-06-live-ai-agents-working-toward-human-benefit.md). Papers, review opportunities and build instructions follow below.
 
 Research papers behind the microcredit protocol: a lending pool on a public blockchain that lends
